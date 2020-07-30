@@ -11,20 +11,27 @@ namespace GalaxyGame
         const int game_length = 60;
         private int _gametimeLeft = game_length;
         private int _score = 0;
+        private int _uniqueElementsCount = 5;
         private GraphicsDeviceManager _graphics;
         private SpriteBatch _spriteBatch;
 
-        public Random BlessRNG = new Random();
+
+
+        public static Random BlessRNG = new Random();
+        //Размеры окна
+        public static int ScreenWidth;
+        public static int ScreenHeight;
 
         public GameGrid gameGrid;
 
         private Texture2D _texture;
+        private Texture2D[] _planetTextures;
 
         public Planet test_planet;
         public Vector2 test_vector;
-        
 
-        public Planet[] planets = new Planet[7];
+
+        public Planet[,] planets;
 
         public Game1()
         {
@@ -37,8 +44,15 @@ namespace GalaxyGame
         protected override void Initialize()
         {
             // TODO: Add your initialization logic here
-            test_vector = new Vector2(100, 0);
-            gameGrid = new GameGrid(376, new Vector2(150, 10));
+            _graphics.PreferredBackBufferHeight += 60;
+            _graphics.ApplyChanges();
+
+            test_vector = new Vector2(100, 100);
+            gameGrid = new GameGrid(376);
+            gameGrid.SetLocation(new Vector2((_graphics.GraphicsDevice.PresentationParameters.Bounds.Width - gameGrid.Width) / 2, 40));
+            _planetTextures = new Texture2D[_uniqueElementsCount];
+            planets = new Planet[gameGrid.GridSize, gameGrid.GridSize];
+            
             
             base.Initialize();
         }
@@ -47,24 +61,35 @@ namespace GalaxyGame
         {
             _spriteBatch = new SpriteBatch(GraphicsDevice);
 
-            // TODO: use this.Content to load your game content here
-
             _texture = Content.Load<Texture2D>("lil_hole");
-
+            LoadPlanets();
             test_planet = new Planet(_texture, test_vector);
+            gameGrid.SetTexture(Content.Load<Texture2D>("cosmos_background"));
 
 
-            for (int i = 0; i< planets.Length; i++)
+
+            int plan_type;
+            int sum = gameGrid.cell_size + gameGrid.BorderSize;
+            int planet_x;
+            int planet_y;
+            for (int i = 0; i< gameGrid.GridSize; i++)
             {
-                planets[i] = new Planet(_texture, new Vector2(BlessRNG.Next(0, 400), BlessRNG.Next(0,300)));
+                for (int j = 0; j < gameGrid.GridSize; j++)
+                {
+                    plan_type = BlessRNG.Next(0, 5);
+                    planet_x = (int)(gameGrid.Location.X + gameGrid.BorderSize + j * sum);
+                    planet_y = (int)(gameGrid.Location.Y + gameGrid.BorderSize + i * sum);
+
+                    planets[i, j] = new Planet(_planetTextures[plan_type], new Vector2(planet_x, planet_y))
+                    {
+                        planetType = (PlanetType)plan_type
+                    };
+                }
+                
             }
 
-
-            //test_planet = new Planet(_texture, new Vector2(100, 200))
-            //{
-            //    planetType = PlanetType.Earth;
-            //}
         }
+
 
         protected override void Update(GameTime gameTime)
         {
@@ -72,6 +97,9 @@ namespace GalaxyGame
             //    Exit();
             Point mouse_coord = Mouse.GetState().Position;
             Rectangle sprite_rec = new Rectangle(test_planet.Position.ToPoint(), new Point(_texture.Width, _texture.Height));
+
+            
+
             if (Mouse.GetState().LeftButton == ButtonState.Pressed && sprite_rec.Contains(mouse_coord))
             {
                 if (test_planet.IsClicked == true)
@@ -80,6 +108,18 @@ namespace GalaxyGame
                     test_planet.IsClicked = true;
             }
             test_planet.Update();
+
+
+            //Проверка, если ли под элеентами ряда другие элементы или пустое пространство!
+            for(int i = gameGrid.GridSize-1; i >= 0; i--)
+            {
+                for (int j = 0; j < gameGrid.GridSize; j++)
+                {
+                    
+                }
+            }
+
+
 
             foreach(var pl in planets)
             {
@@ -94,16 +134,30 @@ namespace GalaxyGame
         {
             GraphicsDevice.Clear(Color.CornflowerBlue);
 
-            // TODO: Add your drawing code here
             _spriteBatch.Begin();
+            gameGrid.Draw(_spriteBatch);   
             test_planet.Draw(_spriteBatch);
             foreach (var pl in planets)
             {
                 pl.Draw(_spriteBatch);
             }
+
             _spriteBatch.End();
 
             base.Draw(gameTime);
         }
+
+
+        //Загружает спрайты всех планеток.
+        private void LoadPlanets()
+        {
+            _planetTextures[0] = Content.Load<Texture2D>("Planets/earth");
+            _planetTextures[1] = Content.Load<Texture2D>("Planets/Venus");
+            _planetTextures[2] = Content.Load<Texture2D>("Planets/Mars");
+            _planetTextures[3] = Content.Load<Texture2D>("Planets/Saturn");
+            _planetTextures[4] = Content.Load<Texture2D>("Planets/Satelite");
+        }
+
+
     }
 }
