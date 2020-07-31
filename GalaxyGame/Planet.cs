@@ -1,69 +1,79 @@
 ﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
+using Microsoft.Xna.Framework.Input;
 using System;
 using System.Collections.Generic;
 using System.Text;
 
 namespace GalaxyGame
 {
-    public enum PlanetType
+
+    public class Planet : Sprite
     {
-        Earth = 0,
-        Venus = 1,
-        Mars = 2,
-        Saturn = 3,
-        Satelite = 4
-    }
-    public class Planet
-    {
-        private Texture2D _texture;
-        private float _angle = 0; //угол относительно X в радианах
-        private float _angleSpeed = 0.3f;//0.15f;
+        public static float radius;
+        private float _angle = MathHelper.ToRadians(141); //угол относительно X в радианах
+        private float _angleSpeed = 0.15f;//0.15f;
         private float _fallingSpeed = 3f;
         private float _fallingDistance = 0; //дистанция падения элемента - будет влиять на отскок
 
         public bool IsFalling = false;
         private bool _bounce = false;
 
-        public Vector2 Position;
         public PlanetType planetType;
         public bool IsClicked = false;
-        public Vector2 Origin;
 
-        public Rectangle Rectangle
+
+        public Planet(Texture2D texture) : base(texture)
         {
-            get
-            {
-                //Возвращает "хитбокс" планеты для чека коллизии
-                return new Rectangle(Position.ToPoint(), new Point(_texture.Width, _texture.Height));
-            }
+            radius = (float)Math.Sqrt(Math.Pow((_texture.Width / 8), 2) + Math.Pow((_texture.Height / 8), 2));
         }
 
-        public Planet(Texture2D texture, Vector2 position)
-        {
-            _texture = texture;
-            Position = position;
-            Origin = new Vector2(Position.X - 10, Position.Y +  _texture.Height/2);     
-            
-        }
+
 
         //По аналогии с основным классом Update -1st/ Draw -2nd
-        public void Update()
+        public override void Update(GameTime gameTime)
         {
-            if (IsClicked)
+            if (Origin.X == 0 && Origin.Y == 0)
             {
-                Position.X = (float)(Origin.X + Math.Cos(_angle) * 5);
-                Position.Y = (float)(Origin.Y + Math.Sin(_angle) * 5);
-                _angle += _angleSpeed;
+                Origin = new Vector2(Position.X + _texture.Width / 8, Position.Y + _texture.Height / 8);
             }
+            //if (IsClicked)
+            //{
+            //    Position.X = (float)(Origin.X + Math.Cos(_angle) * 3);
+            //    Position.Y = (float)(Origin.Y + Math.Sin(_angle) * 3);
+            //    _angle += _angleSpeed;
+            //}
+            if (Mouse.GetState().LeftButton == ButtonState.Pressed)
+            {
+                bool res = rectangle.Contains(Mouse.GetState().Position);
+                if (res && IsClicked == false)
+                {
+                    IsClicked = true;
+                }
+                else if (res && IsClicked == true)
+                {
+                    IsClicked = false;
+                    Position.X = Origin.X - _texture.Width / 8;
+                    Position.Y = Origin.Y - _texture.Height / 8;
+                }
+            }
+
+            if (IsClicked == true)
+                Rotate();
+
             //Падение элемента
             if (IsFalling)
-            {
                 Bounce();
-            }
             
 
-        }    
+        }
+        private void Rotate()
+        {
+            Position.X = (float)(Origin.X + Math.Cos(_angle) * radius);
+            Position.Y = (float)(Origin.Y + Math.Sin(_angle) * radius);
+            _angle -= _angleSpeed;
+        }
+
         //Падение и отскок элемента
         private void Bounce()
         {
@@ -89,22 +99,6 @@ namespace GalaxyGame
                 _bounce = false;
             }
 
-            //Тест ускорения свободного падения!!
-            //if (Position.Y < 400)
-            //{
-            //    Position.Y += _fallingSpeed;
-            //}
-            //else
-            //{
-            //    Position.Y = 0;
-            //}
-            //_fallingSpeed += 0.05f;
-        }
-
-        public void Draw(SpriteBatch spriteBatch)
-        {
-            spriteBatch.Draw(_texture, Position, Color.White);
-            //spriteBatch.Draw(_texture, Position, null, Color.White, _angleSpeed, Origin,1, SpriteEffects.None, 0f);
         }
     }
 }

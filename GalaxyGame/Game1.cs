@@ -5,6 +5,14 @@ using System;
 
 namespace GalaxyGame
 {
+    public enum PlanetType
+    {
+        Earth = 0,
+        Venus = 1,
+        Mars = 2,
+        Saturn = 3,
+        Satelite = 4
+    }
     public class Game1 : Game
     {
         //Основные параметры игры
@@ -16,9 +24,9 @@ namespace GalaxyGame
         private SpriteBatch _spriteBatch;
 
 
-
-        public static Random BlessRNG = new Random();
         //Размеры окна
+        public static Random BlessRNG = new Random();
+
         public static int ScreenWidth;
         public static int ScreenHeight;
 
@@ -43,11 +51,10 @@ namespace GalaxyGame
 
         protected override void Initialize()
         {
-            // TODO: Add your initialization logic here
             _graphics.PreferredBackBufferHeight += 60;
             _graphics.ApplyChanges();
 
-            test_vector = new Vector2(100, 100);
+            test_vector = new Vector2(25, 25);
             gameGrid = new GameGrid(376);
             gameGrid.SetLocation(new Vector2((_graphics.GraphicsDevice.PresentationParameters.Bounds.Width - gameGrid.Width) / 2, 40));
             _planetTextures = new Texture2D[_uniqueElementsCount];
@@ -63,7 +70,11 @@ namespace GalaxyGame
 
             _texture = Content.Load<Texture2D>("lil_hole");
             LoadPlanets();
-            test_planet = new Planet(_texture, test_vector);
+            test_planet = new Planet(_texture)
+            {
+                Position = test_vector
+                
+            };
             gameGrid.SetTexture(Content.Load<Texture2D>("cosmos_background"));
 
 
@@ -80,8 +91,9 @@ namespace GalaxyGame
                     planet_x = (int)(gameGrid.Location.X + gameGrid.BorderSize + j * sum);
                     planet_y = (int)(gameGrid.Location.Y + gameGrid.BorderSize + i * sum);
 
-                    planets[i, j] = new Planet(_planetTextures[plan_type], new Vector2(planet_x, planet_y))
+                    planets[i, j] = new Planet(_planetTextures[plan_type])
                     {
+                        Position = new Vector2(planet_x, planet_y),
                         planetType = (PlanetType)plan_type
                     };
                 }
@@ -100,30 +112,30 @@ namespace GalaxyGame
 
             
 
-            if (Mouse.GetState().LeftButton == ButtonState.Pressed && sprite_rec.Contains(mouse_coord))
-            {
-                if (test_planet.IsClicked == true)
-                    test_planet.IsClicked = false;
-                else
-                    test_planet.IsClicked = true;
-            }
-            test_planet.Update();
+            //if (Mouse.GetState().LeftButton == ButtonState.Pressed && sprite_rec.Contains(mouse_coord))
+            //{
+            //    if (test_planet.IsClicked == true)
+            //        test_planet.IsClicked = false;
+            //    else
+            //        test_planet.IsClicked = true;
+            //}
+            test_planet.Update(gameTime);
 
 
             //Проверка, если ли под элеентами ряда другие элементы или пустое пространство!
-            for(int i = gameGrid.GridSize-1; i >= 0; i--)
-            {
-                for (int j = 0; j < gameGrid.GridSize; j++)
-                {
+            //for(int i = gameGrid.GridSize-1; i >= 0; i--)
+            //{
+            //    for (int j = 0; j < gameGrid.GridSize; j++)
+            //    {
                     
-                }
-            }
+            //    }
+            //}
 
 
 
             foreach(var pl in planets)
             {
-                pl.Update();
+                pl.Update(gameTime);
             }
             // TODO: Add your update logic here
 
