@@ -2,6 +2,8 @@
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using System;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace GalaxyGame
 {
@@ -29,17 +31,16 @@ namespace GalaxyGame
 
         public static int ScreenWidth;
         public static int ScreenHeight;
-
-        public GameGrid gameGrid;
+        public static GameGrid gameGrid;
 
         private Texture2D _texture;
         private Texture2D[] _planetTextures;
+        private List<Sprite> _sprites;
 
         public Planet test_planet;
         public Vector2 test_vector;
 
-
-        public Planet[,] planets;
+        
 
         public Game1()
         {
@@ -55,10 +56,11 @@ namespace GalaxyGame
             _graphics.ApplyChanges();
 
             test_vector = new Vector2(25, 25);
-            gameGrid = new GameGrid(376);
+            gameGrid = new GameGrid(50);
             gameGrid.SetLocation(new Vector2((_graphics.GraphicsDevice.PresentationParameters.Bounds.Width - gameGrid.Width) / 2, 40));
             _planetTextures = new Texture2D[_uniqueElementsCount];
-            planets = new Planet[gameGrid.GridSize, gameGrid.GridSize];
+
+            _sprites = new List<Sprite>();
             
             
             base.Initialize();
@@ -73,29 +75,23 @@ namespace GalaxyGame
             test_planet = new Planet(_texture)
             {
                 Position = test_vector
-                
             };
             gameGrid.SetTexture(Content.Load<Texture2D>("cosmos_background"));
 
 
 
             int plan_type;
-            int sum = gameGrid.cell_size + gameGrid.BorderSize;
-            int planet_x;
-            int planet_y;
+
             for (int i = 0; i< gameGrid.GridSize; i++)
             {
                 for (int j = 0; j < gameGrid.GridSize; j++)
                 {
                     plan_type = BlessRNG.Next(0, 5);
-                    planet_x = (int)(gameGrid.Location.X + gameGrid.BorderSize + j * sum);
-                    planet_y = (int)(gameGrid.Location.Y + gameGrid.BorderSize + i * sum);
-
-                    planets[i, j] = new Planet(_planetTextures[plan_type])
+                    _sprites.Add(new Planet(_planetTextures[plan_type])
                     {
-                        Position = new Vector2(planet_x, planet_y),
+                        Position = new Vector2(gameGrid.SpriteLocations[i,j].X, gameGrid.SpriteLocations[i,j].Y),
                         planetType = (PlanetType)plan_type
-                    };
+                    });
                 }
                 
             }
@@ -110,36 +106,44 @@ namespace GalaxyGame
             Point mouse_coord = Mouse.GetState().Position;
             Rectangle sprite_rec = new Rectangle(test_planet.Position.ToPoint(), new Point(_texture.Width, _texture.Height));
 
+
+
+            //test_planet.Update(gameTime, );
             
-
-            //if (Mouse.GetState().LeftButton == ButtonState.Pressed && sprite_rec.Contains(mouse_coord))
-            //{
-            //    if (test_planet.IsClicked == true)
-            //        test_planet.IsClicked = false;
-            //    else
-            //        test_planet.IsClicked = true;
-            //}
-            test_planet.Update(gameTime);
-
-
-            //Проверка, если ли под элеентами ряда другие элементы или пустое пространство!
-            //for(int i = gameGrid.GridSize-1; i >= 0; i--)
-            //{
-            //    for (int j = 0; j < gameGrid.GridSize; j++)
-            //    {
-                    
-            //    }
-            //}
-
-
-
-            foreach(var pl in planets)
+            foreach (var pl in _sprites)
             {
-                pl.Update(gameTime);
+
+                //List<Sprite> res = _sprites.Where(x => x.rectangle.Top == pl.rectangle.Bottom + Game1.gameGrid.BorderSize && x.rectangle.Left == pl.rectangle.Left).Select(x => x).ToList();
+                //Sprite bottom_sprite = _sprites.FirstOrDefault(x => x.rectangle.Top == pl.rectangle.Bottom + gameGrid.BorderSize && x.rectangle.Left == pl.rectangle.Left);
+                var bottom_sprites = _sprites.Where(sprite => sprite.rectangle.Left == pl.rectangle.Left && sprite.rectangle.Top > pl.rectangle.Bottom).Select(x => x).ToList();
+                pl.Update(gameTime, bottom_sprites);  
             }
-            // TODO: Add your update logic here
+
+            //foreach(Planet pl in _sprites)
+            //{
+            //    pl.Update();
+            //}
+
+            PostUpdate();
 
             base.Update(gameTime);
+        }
+
+        //Уборка уничтоженных спрайтов
+        private void PostUpdate()
+        {
+            int i = 0;
+            while (i < _sprites.Count)
+            {
+                if (_sprites[i].IsRemoved == true)
+                {
+                    _sprites.RemoveAt(i);
+                }
+                else
+                {
+                    i++;
+                }
+            }
         }
 
         protected override void Draw(GameTime gameTime)
@@ -149,7 +153,7 @@ namespace GalaxyGame
             _spriteBatch.Begin();
             gameGrid.Draw(_spriteBatch);   
             test_planet.Draw(_spriteBatch);
-            foreach (var pl in planets)
+            foreach (var pl in _sprites)
             {
                 pl.Draw(_spriteBatch);
             }

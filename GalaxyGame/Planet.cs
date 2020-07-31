@@ -3,6 +3,7 @@ using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 
 namespace GalaxyGame
@@ -16,12 +17,13 @@ namespace GalaxyGame
         private float _fallingSpeed = 3f;
         private float _fallingDistance = 0; //дистанция падения элемента - будет влиять на отскок
 
-        public bool IsFalling = false;
+        public bool IsFalling = true;
         private bool _bounce = false;
 
         public PlanetType planetType;
         public bool IsClicked = false;
 
+        
 
         public Planet(Texture2D texture) : base(texture)
         {
@@ -31,18 +33,13 @@ namespace GalaxyGame
 
 
         //По аналогии с основным классом Update -1st/ Draw -2nd
-        public override void Update(GameTime gameTime)
+        public override void Update(GameTime gameTime, List<Sprite> sprites)
         {
             if (Origin.X == 0 && Origin.Y == 0)
             {
                 Origin = new Vector2(Position.X + _texture.Width / 8, Position.Y + _texture.Height / 8);
             }
-            //if (IsClicked)
-            //{
-            //    Position.X = (float)(Origin.X + Math.Cos(_angle) * 3);
-            //    Position.Y = (float)(Origin.Y + Math.Sin(_angle) * 3);
-            //    _angle += _angleSpeed;
-            //}
+
             if (Mouse.GetState().LeftButton == ButtonState.Pressed)
             {
                 bool res = rectangle.Contains(Mouse.GetState().Position);
@@ -59,13 +56,51 @@ namespace GalaxyGame
             }
 
             if (IsClicked == true)
-                Rotate();
+            {
+                int test1 = rectangle.Top;
+                int test = rectangle.Bottom;
+                IsRemoved = true;
+                return;
+            }
 
-            //Падение элемента
-            if (IsFalling)
-                Bounce();
+            //Rotate();
+
+            ////Падение элемента
+            //if (IsFalling)
+            //    Bounce();
+
+            //Проверка на коллизию с нижележащим элементом и смещение вниз при отсутствии такового
+            //if (rectangle.Bottom <= Game1.gameGrid.BottomLine && IsFalling == true)
+            //{
+            //    float res = Game1.gameGrid.BottomLine;
+            //    if (sprites[0] != null)
+            //    {
+            //        res = sprites[0].rectangle.Top;
+            //    }
+            //    Position.Y += _fallingSpeed;
+            //    Position.Y = MathHelper.Clamp(Position.Y, 0, res - Game1.gameGrid.BorderSize - _texture.Height);
+            //}
+
             
+            float bot = Game1.gameGrid.BottomLine;
+            if (sprites.Count > 0)
+            {
+                bot = sprites.Min(x => x.rectangle.Top);
+            }
+            Position.Y += _fallingSpeed;
+            Position.Y = MathHelper.Clamp(Position.Y, 0, bot - Game1.gameGrid.BorderSize - _texture.Height);
 
+
+
+        }
+        public void Update()
+        {
+            if (Mouse.GetState().RightButton == ButtonState.Pressed)
+            {
+                bool res = rectangle.Contains(Mouse.GetState().Position);
+                if (res)
+                    Position.X += 3;
+            }
         }
         private void Rotate()
         {

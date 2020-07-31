@@ -13,7 +13,7 @@ namespace GalaxyGame
         public Vector2 Position;
         public Vector2 Origin;
         public float speed;
-        
+
 
         public bool IsRemoved = false;
         public Rectangle rectangle
@@ -32,7 +32,7 @@ namespace GalaxyGame
             _texture = texture;
         }
 
-        public virtual void Update(GameTime gameTime)
+        public virtual void Update(GameTime gameTime, List<Sprite> sprite)
         {
 
         }
