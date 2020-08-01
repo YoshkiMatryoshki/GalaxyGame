@@ -33,20 +33,23 @@ namespace GalaxyGame
         //Размеры окна
         public static Random BlessRNG = new Random();
 
-        //public static int ScreenWidth;
-        //public static int ScreenHeight;
+
         public static GameGrid gameGrid;
         public static bool IsElementClicked = false;
+        private ButtonState _previousState;
+        private ButtonState _currentState;
 
-       
+
+
         private Texture2D[] _planetTextures;
+        private Texture2D[] _LinePlanetTextures;
         private List<Sprite> _sprites;
         private int[] _spriteSpawner;
         private Sprite[,] _spriteMatrix;
 
 
-        private ButtonState _previousState;
-        private ButtonState _currentState;
+        public static Planet CurrentClickedPlanet;
+        public static Planet SecondPlanet;
         
 
         public Planet test_planet;
@@ -72,11 +75,11 @@ namespace GalaxyGame
             gameGrid.SetLocation(new Vector2((_graphics.GraphicsDevice.PresentationParameters.Bounds.Width - gameGrid.Width) / 2, 40));
             _spriteSpawner = new int[gameGrid.GridSize];
             _planetTextures = new Texture2D[_uniqueElementsCount];
+            _LinePlanetTextures = new Texture2D[_uniqueElementsCount];
 
             _sprites = new List<Sprite>();
             _spriteMatrix = new Sprite[gameGrid.GridSize, gameGrid.GridSize];
 
-            
             
             base.Initialize();
         }
@@ -87,6 +90,7 @@ namespace GalaxyGame
 
             _texture = Content.Load<Texture2D>("lil_hole");
             LoadPlanets();
+            LoadLineBonuses();
             test_planet = new Planet(_texture)
             {
                 Position = test_vector
@@ -96,7 +100,6 @@ namespace GalaxyGame
 
 
             int plan_type;
-
             for (int i = 0; i< gameGrid.GridSize; i++)
             {
                 for (int j = 0; j < gameGrid.GridSize; j++)
@@ -118,79 +121,126 @@ namespace GalaxyGame
         {
             //if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed || Keyboard.GetState().IsKeyDown(Keys.Escape))
             //    Exit();
+
             _previousState = _currentState;
             _currentState = Mouse.GetState().LeftButton;
 
-
-
             SpawnNewPlanets();
             _timer += (float)gameTime.ElapsedGameTime.TotalSeconds;
-            var xd = (float)gameTime.TotalGameTime.TotalSeconds;
-
 
             //Основной метод update для планет (гравитация)
             //Выключено, пока элемент вращается
             foreach (var pl in _sprites)
             {
-                var bottom_sprites = _sprites.Where(sprite => (sprite.rectangle.Left >= pl.rectangle.Left 
-                && sprite.rectangle.Left <= pl.rectangle.Right
-                || sprite.rectangle.Right <=pl.rectangle.Right && sprite.rectangle.Right >= pl.rectangle.Left)
-                && sprite.rectangle.Top > pl.rectangle.Bottom).Select(x => x).ToList();
-                pl.Update(gameTime, bottom_sprites);
+                pl.Update(gameTime, _sprites);
             }
 
 
-
-
-
-            //Клик по элементу и его потенциальным "соседям по обмену"
-            //if (_currentState == ButtonState.Pressed && _previousState == ButtonState.Released)
-            //{
-            //    Point mouse_coord = Mouse.GetState().Position;
-            //    Sprite result_sprite = _sprites.Where(sp => sp.rectangle.Contains(mouse_coord)).Select(x => x).FirstOrDefault();
-            //    //List<Sprite> res = _sprites.Where(sp => Math.Abs(sp.Position.X - result_sprite.Position.X) == 54 |
-            //    //Math.Abs(sp.Position.Y - result_sprite.Position.Y) == 54).Select(x => x).ToList();
-            //    List<Sprite> test = new List<Sprite>();
-            //    float def_x = 0;
-            //    float def_y = 0;
-            //    if (result_sprite != null)
-            //    {
-            //        foreach (Sprite sp in _sprites)
-            //        {
-            //            def_x = Math.Abs(sp.Position.X - result_sprite.Position.X);
-            //            def_y = Math.Abs(sp.Position.Y - result_sprite.Position.Y);
-            //            if ((def_x == 54 && sp.Position.Y == result_sprite.Position.Y) | (def_y == 54 && sp.Position.X == result_sprite.Position.X))
-            //            {
-            //                test.Add(sp);
-            //            }
-            //        }
-            //        result_sprite.IsRemoved = true;
-            //        foreach (Sprite t in test)
-            //        {
-            //            t.IsRemoved = true;
-            //        }
-            //    }
-            //}
-
+            //TEST
+            Rectangle test = new Rectangle((int)gameGrid.Location.X, (int)gameGrid.Location.Y, gameGrid.Width, gameGrid.Height);
+            if (Mouse.GetState().RightButton == ButtonState.Pressed && !test.Contains(Mouse.GetState().Position))
+            {
+                var xd = BlessRNG.Next(0, 5);
+                _sprites.Add(new LineBonus(_LinePlanetTextures[xd])
+                {
+                    Position = Mouse.GetState().Position.ToVector2(),
+                    planetType = (PlanetType)xd
+                });
+            }
+            //TEST
 
             //Заполнение матрицы и проверка матчей!
             //Keyboard.GetState().IsKeyDown(Keys.Space) &&
-            if ( _timer > 1f)
+            if (_timer > 1f && IsElementClicked == false)
             {
                 _spriteMatrix = FillSpriteMatrix();
-                var res = ScanMatrixForNulls();
-                if (res != false)
-                {
-                    ScanMatrixForMatches();
-                }
+                ScanMatrixForMatches();
+                //var res = ScanMatrixForNulls();
+                //if (res != false)
+                //{
+                //    ScanMatrixForMatches();
+                //}
                 _timer = 0;
             }
+
+            if (ScanMatrixForNulls() || !ScanMatrixForNulls())
+            {
+                SwapClickWorks();
+            }
+
 
 
             PostUpdate();
 
             base.Update(gameTime);
         }
+
+        private void SwapClickWorks()
+        {
+            if (_currentState == ButtonState.Pressed && _previousState == ButtonState.Released
+                && CurrentClickedPlanet != null && SecondPlanet != null)
+            {
+                CurrentClickedPlanet.MoveToOriginPlace();
+                if (CheckIfNeighbours(SecondPlanet))
+                {
+                    CurrentClickedPlanet.Destinaition = SecondPlanet.Position;
+                    SecondPlanet.Destinaition = CurrentClickedPlanet.Position;
+                }
+                else
+                {
+                    CurrentClickedPlanet = null;
+                    SecondPlanet = null;
+                    IsElementClicked = false;
+                }
+            }
+            if (SecondPlanet != null && CurrentClickedPlanet != null && CurrentClickedPlanet.Position == CurrentClickedPlanet.Destinaition
+                && SecondPlanet.Position == SecondPlanet.Destinaition)
+            {
+
+                Point main_loc = gameGrid.GetXYLocationIndexes(CurrentClickedPlanet.Position);
+                Point sec_loc = gameGrid.GetXYLocationIndexes(SecondPlanet.Position);
+
+                _spriteMatrix[main_loc.X, main_loc.Y] = CurrentClickedPlanet;
+                _spriteMatrix[sec_loc.X, sec_loc.Y] = SecondPlanet;
+
+
+                int horizontal_match = GetMatchNumbers((1, 0), main_loc.X, main_loc.Y, _spriteMatrix) + GetMatchNumbers((-1, 0), main_loc.X, main_loc.Y, _spriteMatrix);
+                int vertical_match = GetMatchNumbers((0, 1), main_loc.X, main_loc.Y, _spriteMatrix) + GetMatchNumbers((0, -1), main_loc.X, main_loc.Y, _spriteMatrix);
+                if (horizontal_match < 2 && vertical_match < 2)
+                {
+                    horizontal_match = GetMatchNumbers((1, 0), sec_loc.X, sec_loc.Y, _spriteMatrix) + GetMatchNumbers((-1, 0), sec_loc.X, sec_loc.Y, _spriteMatrix);
+                    vertical_match = GetMatchNumbers((0, 1), sec_loc.X, sec_loc.Y, _spriteMatrix) + GetMatchNumbers((0, -1), sec_loc.X, sec_loc.Y, _spriteMatrix);
+                }
+
+                if (horizontal_match < 2 && vertical_match < 2)
+                {
+                    CurrentClickedPlanet.Destinaition = SecondPlanet.Position;
+                    SecondPlanet.Destinaition = CurrentClickedPlanet.Position;
+                }
+                CurrentClickedPlanet = null;
+                SecondPlanet = null;
+                IsElementClicked = false;
+            }
+        }
+
+        //Проверка, являются ли выделенные кликнутые элементы соседями
+        private static bool CheckIfNeighbours(Sprite second_planet)
+        {
+            bool res = false;
+            if (Math.Abs(CurrentClickedPlanet.Origin.X - second_planet.Origin.X) <= gameGrid.CellSize + gameGrid.BorderSize + 5
+                && CurrentClickedPlanet.Origin.Y == second_planet.Origin.Y)
+            {
+                res = true;
+            }
+            if (Math.Abs(CurrentClickedPlanet.Origin.Y - second_planet.Origin.Y) <= gameGrid.CellSize + gameGrid.BorderSize + 5
+                && CurrentClickedPlanet.Origin.X == second_planet.Origin.X)
+            {
+                res = true;
+            }
+
+            return res;
+        }
+
         //Проверка, полностью ли заполнена матрица
         //return true if wegucci
         private bool ScanMatrixForNulls()
@@ -264,10 +314,11 @@ namespace GalaxyGame
             Sprite[,] result_arr = new Sprite[gameGrid.GridSize, gameGrid.GridSize];
             foreach (Sprite sp in _sprites)
             {
-                var x_pos = gameGrid.GetXLocationIndex(sp.Position);
-                var y_pos = gameGrid.GetYLocationIndex(sp.Position);
-                if (x_pos != -1 && y_pos != -1)
-                    result_arr[x_pos, y_pos] = sp;
+                //var x_pos = gameGrid.GetXLocationIndex(sp.Position);
+                //var y_pos = gameGrid.GetYLocationIndex(sp.Position);
+                var res_point = gameGrid.GetXYLocationIndexes(sp.Position);
+                if (res_point.X != -1 && res_point.Y != -1)
+                    result_arr[res_point.X, res_point.Y] = sp;
             }
 
             return result_arr;
@@ -388,6 +439,16 @@ namespace GalaxyGame
             _planetTextures[2] = Content.Load<Texture2D>("Planets/Mars");
             _planetTextures[3] = Content.Load<Texture2D>("Planets/Saturn");
             _planetTextures[4] = Content.Load<Texture2D>("Planets/Asteroid");
+        }
+        //ПОдгрузка line бонусов
+        private void LoadLineBonuses()
+        {
+            _LinePlanetTextures[0] = Content.Load<Texture2D>("LineBonuses/earth_line");
+            _LinePlanetTextures[1] = Content.Load<Texture2D>("LineBonuses/neptune_line");
+            _LinePlanetTextures[2] = Content.Load<Texture2D>("LineBonuses/mars_line");
+            _LinePlanetTextures[3] = Content.Load<Texture2D>("LineBonuses/saturn_line");
+            _LinePlanetTextures[4] = Content.Load<Texture2D>("LineBonuses/asteroid_line");
+
         }
 
 

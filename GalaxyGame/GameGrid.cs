@@ -98,5 +98,32 @@ namespace GalaxyGame
             }
             return -1;
         }
+        internal Point GetXYLocationIndexes(Vector2 sprite_pos)
+        {
+            Point res = new Point(-1, -1);
+
+            int i = 0;
+            while (i< GridSize)
+            {
+                if (sprite_pos.X == SpriteLocations[0, i].X)
+                {
+                    res.X = i;
+                    i = GridSize;
+                }
+                i++;
+            }
+            i = 0;
+            while(i < GridSize)
+            {
+                if (sprite_pos.Y == SpriteLocations[i, 0].Y)
+                {
+                    res.Y = i;
+                    i = GridSize;
+                }
+                i++;
+            }
+
+            return res;
+        }
     }
 }

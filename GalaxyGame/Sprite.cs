@@ -40,5 +40,7 @@ namespace GalaxyGame
         {
             spriteBatch.Draw(_texture, Position, Color.White);
         }
+
+
     }
 }
