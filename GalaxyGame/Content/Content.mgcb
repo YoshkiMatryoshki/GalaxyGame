@@ -49,7 +49,7 @@
 /processorParam:TextureFormat=Color
 /build:lil_hole.png
 
-#begin Planets/earth.png
+#begin Planets/Asteroid.png
 /importer:TextureImporter
 /processor:TextureProcessor
 /processorParam:ColorKeyColor=255,0,255,255
@@ -59,7 +59,7 @@
 /processorParam:ResizeToPowerOfTwo=False
 /processorParam:MakeSquare=False
 /processorParam:TextureFormat=Color
-/build:Planets/earth.png
+/build:Planets/Asteroid.png
 
 #begin Planets/earth.png
 /importer:TextureImporter
@@ -85,7 +85,7 @@
 /processorParam:TextureFormat=Color
 /build:Planets/Mars.png
 
-#begin Planets/Satelite.png
+#begin Planets/Neptune.png
 /importer:TextureImporter
 /processor:TextureProcessor
 /processorParam:ColorKeyColor=255,0,255,255
@@ -95,7 +95,7 @@
 /processorParam:ResizeToPowerOfTwo=False
 /processorParam:MakeSquare=False
 /processorParam:TextureFormat=Color
-/build:Planets/Satelite.png
+/build:Planets/Neptune.png
 
 #begin Planets/Saturn.png
 /importer:TextureImporter
@@ -108,16 +108,4 @@
 /processorParam:MakeSquare=False
 /processorParam:TextureFormat=Color
 /build:Planets/Saturn.png
-
-#begin Planets/Venus.png
-/importer:TextureImporter
-/processor:TextureProcessor
-/processorParam:ColorKeyColor=255,0,255,255
-/processorParam:ColorKeyEnabled=True
-/processorParam:GenerateMipmaps=False
-/processorParam:PremultiplyAlpha=True
-/processorParam:ResizeToPowerOfTwo=False
-/processorParam:MakeSquare=False
-/processorParam:TextureFormat=Color
-/build:Planets/Venus.png
 

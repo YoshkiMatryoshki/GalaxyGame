@@ -20,7 +20,7 @@ namespace GalaxyGame
         public Vector2[,] SpriteLocations; //Тут информация о "разрешенных" позициях всех спрайтов
 
         public int GridSize {get;} = 8;
-        public int BorderSize { get; } = 7;
+        public int BorderSize { get; } = 4;
         private Texture2D _texture;
         private Rectangle _resizeTextureRec;
 
@@ -71,6 +71,32 @@ namespace GalaxyGame
         {
             spriteBatch.Draw(_texture,_resizeTextureRec, Color.White);
         }
-
+        //Get index in SpriteLocations
+        internal int GetXLocationIndex(Vector2 sprite_pos)
+        {
+            int i = 0;
+            while (i < GridSize)
+            {
+                if (sprite_pos.X == SpriteLocations[0, i].X)
+                {
+                    return i;
+                }
+                i++;
+            }
+            return -1;
+        }
+        internal int GetYLocationIndex(Vector2 sprite_pos)
+        {
+            int i = 0;
+            while (i < GridSize)
+            {
+                if (sprite_pos.Y == SpriteLocations[i, 0].Y)
+                {
+                    return i;
+                }
+                i++;
+            }
+            return -1;
+        }
     }
 }

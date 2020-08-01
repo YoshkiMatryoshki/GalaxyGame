@@ -14,7 +14,7 @@ namespace GalaxyGame
         public static float radius;
         private float _angle = MathHelper.ToRadians(141); //угол относительно X в радианах
         private float _angleSpeed = 0.15f;//0.15f;
-        private float _fallingSpeed = 3f;
+        private float _fallingSpeed = 1f;
         private float _fallingDistance = 0; //дистанция падения элемента - будет влиять на отскок
 
         public bool IsFalling = true;
@@ -55,13 +55,14 @@ namespace GalaxyGame
                 }
             }
 
-            if (IsClicked == true)
-            {
-                int test1 = rectangle.Top;
-                int test = rectangle.Bottom;
-                IsRemoved = true;
-                return;
-            }
+
+            //if (IsClicked == true)
+            //{
+            //    int test1 = rectangle.Top;
+            //    int test = rectangle.Bottom;
+            //    IsRemoved = true;
+            //    return;
+            //}
 
             //Rotate();
 
@@ -69,38 +70,34 @@ namespace GalaxyGame
             //if (IsFalling)
             //    Bounce();
 
-            //Проверка на коллизию с нижележащим элементом и смещение вниз при отсутствии такового
-            //if (rectangle.Bottom <= Game1.gameGrid.BottomLine && IsFalling == true)
-            //{
-            //    float res = Game1.gameGrid.BottomLine;
-            //    if (sprites[0] != null)
-            //    {
-            //        res = sprites[0].rectangle.Top;
-            //    }
-            //    Position.Y += _fallingSpeed;
-            //    Position.Y = MathHelper.Clamp(Position.Y, 0, res - Game1.gameGrid.BorderSize - _texture.Height);
-            //}
-
-            
+                       
             float bot = Game1.gameGrid.BottomLine;
             if (sprites.Count > 0)
             {
                 bot = sprites.Min(x => x.rectangle.Top);
             }
             Position.Y += _fallingSpeed;
-            Position.Y = MathHelper.Clamp(Position.Y, 0, bot - Game1.gameGrid.BorderSize - _texture.Height);
+            Position.Y = MathHelper.Clamp(Position.Y, -1000, bot - Game1.gameGrid.BorderSize - _texture.Height);
 
 
 
         }
-        public void Update()
+        //Препятствует накладыванию спрайтов друг на друга при респавне планет
+        public void SpawnCollision(List<Sprite> sprites)
         {
-            if (Mouse.GetState().RightButton == ButtonState.Pressed)
-            {
-                bool res = rectangle.Contains(Mouse.GetState().Position);
-                if (res)
-                    Position.X += 3;
-            }
+            List<Sprite> this_columnsprites = sprites.Where(sprite => sprite.rectangle.Left == this.rectangle.Left && sprite.rectangle.Bottom < Game1.gameGrid.Location.Y)
+                .Select(x => x).ToList();
+            if (this_columnsprites.Count == 0)
+                return;
+            int res = this_columnsprites.Min(x => x.rectangle.Top);
+            Position.Y = res - Game1.gameGrid.BorderSize - _texture.Height;
+            //foreach (Sprite sprite in sprites)
+            //{
+            //    if (this.rectangle.Intersects(sprite.rectangle))
+            //    {
+            //        Position.Y = sprite.Position.Y - sprite.rectangle.Height - Game1.gameGrid.BorderSize;
+            //    }
+            //}
         }
         private void Rotate()
         {
