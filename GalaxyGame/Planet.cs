@@ -14,7 +14,7 @@ namespace GalaxyGame
         public static float radius;
         private float _angle = MathHelper.ToRadians(141); //угол относительно X в радианах
         private float _angleSpeed = 0.15f;//0.15f;
-        private float _fallingSpeed = 1f;
+        private float _fallingSpeed = 4f;
         private float _fallingDistance = 0; //дистанция падения элемента - будет влиять на отскок
 
         public bool IsFalling = true;
@@ -23,7 +23,8 @@ namespace GalaxyGame
         public PlanetType planetType;
         public bool IsClicked = false;
 
-        
+        private ButtonState _previousState;
+        private ButtonState _currentState;
 
         public Planet(Texture2D texture) : base(texture)
         {
@@ -35,16 +36,20 @@ namespace GalaxyGame
         //По аналогии с основным классом Update -1st/ Draw -2nd
         public override void Update(GameTime gameTime, List<Sprite> sprites)
         {
-            if (Origin.X == 0 && Origin.Y == 0)
-            {
-                Origin = new Vector2(Position.X + _texture.Width / 8, Position.Y + _texture.Height / 8);
-            }
+            _previousState = _currentState;
+            _currentState = Mouse.GetState().LeftButton;
 
-            if (Mouse.GetState().LeftButton == ButtonState.Pressed)
+            //if (Origin.X == 0 && Origin.Y == 0)
+            //{
+            //    Origin = new Vector2(Position.X + _texture.Width / 8, Position.Y + _texture.Height / 8);
+            //}
+
+            if (_currentState == ButtonState.Pressed && _previousState == ButtonState.Released)
             {
                 bool res = rectangle.Contains(Mouse.GetState().Position);
-                if (res && IsClicked == false)
+                if (res && IsClicked == false && Game1.IsElementClicked == false)
                 {
+                    Game1.IsElementClicked = true;
                     IsClicked = true;
                 }
                 else if (res && IsClicked == true)
@@ -52,25 +57,21 @@ namespace GalaxyGame
                     IsClicked = false;
                     Position.X = Origin.X - _texture.Width / 8;
                     Position.Y = Origin.Y - _texture.Height / 8;
+                    Game1.IsElementClicked = false;
                 }
             }
 
+            if (IsClicked == true)
+            {
+                Rotate();
+                return;
+            }
 
-            //if (IsClicked == true)
-            //{
-            //    int test1 = rectangle.Top;
-            //    int test = rectangle.Bottom;
-            //    IsRemoved = true;
-            //    return;
-            //}
 
-            //Rotate();
+            //Нет гравитации, если на форме выделен элемент
+            if (Game1.IsElementClicked == true)
+                return;
 
-            ////Падение элемента
-            //if (IsFalling)
-            //    Bounce();
-
-                       
             float bot = Game1.gameGrid.BottomLine;
             if (sprites.Count > 0)
             {
@@ -78,7 +79,7 @@ namespace GalaxyGame
             }
             Position.Y += _fallingSpeed;
             Position.Y = MathHelper.Clamp(Position.Y, -1000, bot - Game1.gameGrid.BorderSize - _texture.Height);
-
+            Origin = new Vector2(Position.X + _texture.Width / 8, Position.Y + _texture.Height / 8);
 
 
         }
@@ -91,14 +92,8 @@ namespace GalaxyGame
                 return;
             int res = this_columnsprites.Min(x => x.rectangle.Top);
             Position.Y = res - Game1.gameGrid.BorderSize - _texture.Height;
-            //foreach (Sprite sprite in sprites)
-            //{
-            //    if (this.rectangle.Intersects(sprite.rectangle))
-            //    {
-            //        Position.Y = sprite.Position.Y - sprite.rectangle.Height - Game1.gameGrid.BorderSize;
-            //    }
-            //}
         }
+
         private void Rotate()
         {
             Position.X = (float)(Origin.X + Math.Cos(_angle) * radius);

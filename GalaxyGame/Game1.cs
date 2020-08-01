@@ -2,6 +2,7 @@
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using SharpDX.Direct2D1.Effects;
+using SharpDX.MediaFoundation;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -21,8 +22,10 @@ namespace GalaxyGame
         //Основные параметры игры
         const int game_length = 60;
         private int _gametimeLeft = game_length;
+        private bool _gameStarted = false;
         private int _score = 0;
         private int _uniqueElementsCount = 5;
+        private float _timer;
         private GraphicsDeviceManager _graphics;
         private SpriteBatch _spriteBatch;
 
@@ -30,21 +33,26 @@ namespace GalaxyGame
         //Размеры окна
         public static Random BlessRNG = new Random();
 
-        public static int ScreenWidth;
-        public static int ScreenHeight;
+        //public static int ScreenWidth;
+        //public static int ScreenHeight;
         public static GameGrid gameGrid;
+        public static bool IsElementClicked = false;
 
-        private Texture2D _texture;
+       
         private Texture2D[] _planetTextures;
         private List<Sprite> _sprites;
         private int[] _spriteSpawner;
         private Sprite[,] _spriteMatrix;
+
+
+        private ButtonState _previousState;
+        private ButtonState _currentState;
         
 
         public Planet test_planet;
         public Vector2 test_vector;
+        private Texture2D _texture;
 
-        
 
         public Game1()
         {
@@ -110,60 +118,74 @@ namespace GalaxyGame
         {
             //if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed || Keyboard.GetState().IsKeyDown(Keys.Escape))
             //    Exit();
-            //Point mouse_coord = Mouse.GetState().Position;
-            //Rectangle sprite_rec = new Rectangle(test_planet.Position.ToPoint(), new Point(_texture.Width, _texture.Height));
-            //test_planet.Update(gameTime, );
+            _previousState = _currentState;
+            _currentState = Mouse.GetState().LeftButton;
+
 
 
             SpawnNewPlanets();
+            _timer += (float)gameTime.ElapsedGameTime.TotalSeconds;
+            var xd = (float)gameTime.TotalGameTime.TotalSeconds;
 
 
             //Основной метод update для планет (гравитация)
+            //Выключено, пока элемент вращается
             foreach (var pl in _sprites)
             {
-                var bottom_sprites = _sprites.Where(sprite => sprite.rectangle.Left == pl.rectangle.Left && sprite.rectangle.Top > pl.rectangle.Bottom).Select(x => x).ToList();
+                var bottom_sprites = _sprites.Where(sprite => (sprite.rectangle.Left >= pl.rectangle.Left 
+                && sprite.rectangle.Left <= pl.rectangle.Right
+                || sprite.rectangle.Right <=pl.rectangle.Right && sprite.rectangle.Right >= pl.rectangle.Left)
+                && sprite.rectangle.Top > pl.rectangle.Bottom).Select(x => x).ToList();
                 pl.Update(gameTime, bottom_sprites);
             }
 
-            if (Mouse.GetState().LeftButton == ButtonState.Pressed)
-            {
-                Point mouse_coord = Mouse.GetState().Position;
-                Sprite result_sprite = _sprites.Where(sp => sp.rectangle.Contains(mouse_coord)).Select(x => x).FirstOrDefault();
-                //List<Sprite> res = _sprites.Where(sp => Math.Abs(sp.Position.X - result_sprite.Position.X) == 54 |
-                //Math.Abs(sp.Position.Y - result_sprite.Position.Y) == 54).Select(x => x).ToList();
-                List<Sprite> test = new List<Sprite>();
-                float def_x = 0;
-                float def_y = 0;
-                if (result_sprite != null)
-                {
-                    foreach (Sprite sp in _sprites)
-                    {
-                        def_x = Math.Abs(sp.Position.X - result_sprite.Position.X);
-                        def_y = Math.Abs(sp.Position.Y - result_sprite.Position.Y);
-                        if ((def_x == 54 && sp.Position.Y == result_sprite.Position.Y) | (def_y == 54 && sp.Position.X == result_sprite.Position.X))
-                        {
-                            test.Add(sp);
-                        }
-                    }
-                    result_sprite.IsRemoved = true;
-                    foreach (Sprite t in test)
-                    {
-                        t.IsRemoved = true;
-                    }
-                }
-            }
+
+
+
+
+            //Клик по элементу и его потенциальным "соседям по обмену"
+            //if (_currentState == ButtonState.Pressed && _previousState == ButtonState.Released)
+            //{
+            //    Point mouse_coord = Mouse.GetState().Position;
+            //    Sprite result_sprite = _sprites.Where(sp => sp.rectangle.Contains(mouse_coord)).Select(x => x).FirstOrDefault();
+            //    //List<Sprite> res = _sprites.Where(sp => Math.Abs(sp.Position.X - result_sprite.Position.X) == 54 |
+            //    //Math.Abs(sp.Position.Y - result_sprite.Position.Y) == 54).Select(x => x).ToList();
+            //    List<Sprite> test = new List<Sprite>();
+            //    float def_x = 0;
+            //    float def_y = 0;
+            //    if (result_sprite != null)
+            //    {
+            //        foreach (Sprite sp in _sprites)
+            //        {
+            //            def_x = Math.Abs(sp.Position.X - result_sprite.Position.X);
+            //            def_y = Math.Abs(sp.Position.Y - result_sprite.Position.Y);
+            //            if ((def_x == 54 && sp.Position.Y == result_sprite.Position.Y) | (def_y == 54 && sp.Position.X == result_sprite.Position.X))
+            //            {
+            //                test.Add(sp);
+            //            }
+            //        }
+            //        result_sprite.IsRemoved = true;
+            //        foreach (Sprite t in test)
+            //        {
+            //            t.IsRemoved = true;
+            //        }
+            //    }
+            //}
+
 
             //Заполнение матрицы и проверка матчей!
-            if (Keyboard.GetState().IsKeyDown(Keys.Space))
+            //Keyboard.GetState().IsKeyDown(Keys.Space) &&
+            if ( _timer > 1f)
             {
                 _spriteMatrix = FillSpriteMatrix();
-                var res =  ScanMatrixForNulls();
+                var res = ScanMatrixForNulls();
                 if (res != false)
                 {
                     ScanMatrixForMatches();
                 }
-
+                _timer = 0;
             }
+
 
             PostUpdate();
 
@@ -264,21 +286,21 @@ namespace GalaxyGame
             {
                 return 0;
             }
-            //try
-            //{
-            //    if (curr_elem.planetType != next_elem.planetType)
-            //    {
-            //        return 0;
-            //    }
-            //}
-            //catch
-            //{
-            //    return 0;
-            //}
-            if (curr_elem.planetType != next_elem.planetType)
+            try
+            {
+                if (curr_elem.planetType != next_elem.planetType)
+                {
+                    return 0;
+                }
+            }
+            catch
             {
                 return 0;
             }
+            //if (curr_elem.planetType != next_elem.planetType)
+            //{
+            //    return 0;
+            //}
 
 
             if (curr_elem.planetType == next_elem.planetType)
