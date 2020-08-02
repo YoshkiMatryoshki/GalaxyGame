@@ -7,7 +7,7 @@ using System.Text;
 namespace GalaxyGame
 {
     //Main sprite class
-     public class Sprite
+     public class Sprite : ICloneable
     {
         protected Texture2D _texture;
         public Vector2 Position;
@@ -40,7 +40,14 @@ namespace GalaxyGame
         {
             spriteBatch.Draw(_texture, Position, Color.White);
         }
+        public virtual void MatchDetection(GameTime gameTime, List<Sprite> sprite)
+        {
 
+        }
 
+        public object Clone()
+        {
+            return this.MemberwiseClone();
+        }
     }
 }

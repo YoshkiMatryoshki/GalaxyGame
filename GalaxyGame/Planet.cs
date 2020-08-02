@@ -1,12 +1,14 @@
 ﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
+using SharpDX.MediaFoundation;
 using SharpDX.MediaFoundation.DirectX;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
+using System.Threading;
 
 namespace GalaxyGame
 {
@@ -16,8 +18,9 @@ namespace GalaxyGame
         public static float radius;
         private float _angle = MathHelper.ToRadians(141); //угол относительно X в радианах
         private float _angleSpeed = 0.15f;//0.15f;
-        private float _fallingSpeed = 6f;
+        private float _fallingSpeed = 5f;
         private float _fallingDistance = 0; //дистанция падения элемента - будет влиять на отскок
+
 
         public Vector2 Destinaition;
         private bool _bounce = false;
@@ -62,7 +65,7 @@ namespace GalaxyGame
                 Destinaition.Y = 0;
             }
 
-
+            //Установка кликнутых элементов
             if (_currentState == ButtonState.Pressed && _previousState == ButtonState.Released)
             {
                 bool IsItME = rectangle.Contains(Mouse.GetState().Position);
@@ -103,7 +106,7 @@ namespace GalaxyGame
             float bot = Game1.gameGrid.BottomLine;
             foreach (Sprite sprite in sprites)
             {
-                if (sprite == this)
+                if (sprite == this || sprite.GetType() == typeof(Destroyer))
                     continue;
                 if (IsBottomElement(sprite))
                 {
@@ -126,15 +129,6 @@ namespace GalaxyGame
             Position.Y = Origin.Y - _texture.Height / 8;
         }
 
-        //Проверка на коллизию с нижним элементом
-        //В пределах колонны 
-        private bool IsBottomElement(Sprite sprite)
-        {
-            return (sprite.rectangle.Left >= rectangle.Left && sprite.rectangle.Left <= rectangle.Right
-                || sprite.rectangle.Right <= rectangle.Right && sprite.rectangle.Right >= rectangle.Left)
-                &&
-                ( Math.Abs (sprite.rectangle.Top - rectangle.Bottom) <= (Game1.gameGrid.BorderSize + _texture.Height / 2));
-        }
 
         //Препятствует накладыванию спрайтов друг на друга при респавне планет
         public void SpawnCollision(List<Sprite> sprites)
@@ -153,6 +147,64 @@ namespace GalaxyGame
             Position.Y = (float)(Origin.Y + Math.Sin(_angle) * radius);
             _angle -= _angleSpeed;
         }
+
+        #region MatchDetection
+        public override void MatchDetection(GameTime gameTime, List<Sprite> sprites)
+        {
+            if (IsRemoved == false && GetType() != typeof(Destroyer) || GetType() != typeof(Bomb))
+            {
+                List<Sprite> cleared_sprites = sprites.Where(sp => sp.GetType() != typeof(Bomb) && sp.GetType() != typeof(Destroyer)).Select(x => x).ToList();
+
+                //Горизонтальная проверка
+                List<Sprite> right_neighbours = cleared_sprites.Where(sprite => sprite.rectangle.Top == rectangle.Top && sprite.Position.X >= Position.X)
+                    .OrderBy(x => x.Position.X).ToList();
+                int xd = GetMatchNumbers(right_neighbours, 0);
+                if (xd == 3)
+                {
+                    sprites.Add(new LineBonus(Game1.LinePlanetTextures[(int)this.planetType])
+                    {
+                        planetType = this.planetType,
+                        Position = this.Position,
+                        BonusDirection = new Vector2(1, 0)
+                    });
+                }
+                if (xd >= 2)
+                {
+                    IsRemoved = true;
+                    while (xd > 0)
+                    {
+                        right_neighbours[xd].IsRemoved = true;
+                        xd--;
+                    }
+                }
+                xd = 0;
+                //Вертикальная проверка
+                List<Sprite> bot_neighbours = cleared_sprites.Where(sprite => sprite.Position.X == Position.X && sprite.Position.Y >= Position.Y)
+                    .OrderBy(x => x.Position.Y).ToList();
+                xd = GetBottomMatchNumbers(bot_neighbours, 0);
+                if (xd == 3)
+                {
+                    sprites.Add(new LineBonus(Game1.LinePlanetTextures[(int)this.planetType])
+                    {
+                        planetType = this.planetType,
+                        Position = this.Position,
+                        BonusDirection = new Vector2(0, 1)
+                    });
+                }
+                if (xd >= 2)
+                {
+                    IsRemoved = true;
+                    while (xd > 0)
+                    {
+                        bot_neighbours[xd].IsRemoved = true;
+                        xd--;
+                    }
+                }
+            }
+        }
+        #endregion
+
+
 
         //Падение и отскок элемента
         private void Bounce()
@@ -178,7 +230,75 @@ namespace GalaxyGame
             {
                 _bounce = false;
             }
+        }
 
+
+        //Собирает по списку комбинацию из совпадающих элементов по горизонтали
+        private int GetMatchNumbers(List<Sprite> sprites, int ind)
+        {
+            int count = 0;
+            Planet curr_elem = sprites[ind] as Planet;
+            Planet next_elem;
+            try
+            {
+                next_elem = sprites[ind + 1] as Planet;
+            }
+            catch
+            {
+                return 0;
+            }
+            if (curr_elem.planetType != next_elem.planetType)
+            {
+                return 0;
+            }
+            else if (curr_elem.IsRightElement(next_elem))
+            {
+                return 1 + GetMatchNumbers(sprites, ind + 1);
+            }
+            return count;
+        }
+        //Собирает по списку комбинацию из совпадающих элементов
+        private int GetBottomMatchNumbers(List<Sprite> sprites, int ind)
+        {
+            int count = 0;
+            Planet curr_elem = sprites[ind] as Planet;
+            Planet next_elem;
+            try
+            {
+                next_elem = sprites[ind + 1] as Planet;
+            }
+            catch
+            {
+                return 0;
+            }
+            if (curr_elem.planetType != next_elem.planetType)
+            {
+                return 0;
+            }
+            else if (curr_elem.IsBottomElement(next_elem))
+            {
+                return 1 + GetBottomMatchNumbers(sprites, ind + 1);
+            }
+            return count;
+
+        }
+
+
+
+        //Проверка на коллизию с правым элементов
+        private bool IsRightElement(Sprite sprite)
+        {
+            return (sprite.rectangle.Top <= rectangle.Y + rectangle.Height + 15 && sprite.rectangle.Top >= rectangle.Y - rectangle.Height - 15
+                && (Math.Abs(sprite.rectangle.Left - rectangle.Right) <= (Game1.gameGrid.BorderSize + _texture.Width / 8)));
+        }
+        //Проверка на коллизию с нижним элементом
+        //В пределах колонны 
+        private bool IsBottomElement(Sprite sprite)
+        {
+            return (sprite.rectangle.Left >= rectangle.Left && sprite.rectangle.Left <= rectangle.Right
+                || sprite.rectangle.Right <= rectangle.Right && sprite.rectangle.Right >= rectangle.Left)
+                &&
+                (Math.Abs(sprite.rectangle.Top - rectangle.Bottom) <= (Game1.gameGrid.BorderSize + _texture.Height / 2));
         }
     }
 }

@@ -4,6 +4,7 @@ using Microsoft.Xna.Framework.Input;
 using SharpDX.Direct2D1.Effects;
 using SharpDX.MediaFoundation;
 using System;
+using System.CodeDom;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -26,6 +27,7 @@ namespace GalaxyGame
         private int _score = 0;
         private int _uniqueElementsCount = 5;
         private float _timer;
+        private float _collisionTimer;
         private GraphicsDeviceManager _graphics;
         private SpriteBatch _spriteBatch;
 
@@ -42,7 +44,7 @@ namespace GalaxyGame
 
 
         private Texture2D[] _planetTextures;
-        private Texture2D[] _LinePlanetTextures;
+        public static Texture2D[] LinePlanetTextures;
         private List<Sprite> _sprites;
         private int[] _spriteSpawner;
         private Sprite[,] _spriteMatrix;
@@ -75,12 +77,14 @@ namespace GalaxyGame
             gameGrid.SetLocation(new Vector2((_graphics.GraphicsDevice.PresentationParameters.Bounds.Width - gameGrid.Width) / 2, 40));
             _spriteSpawner = new int[gameGrid.GridSize];
             _planetTextures = new Texture2D[_uniqueElementsCount];
-            _LinePlanetTextures = new Texture2D[_uniqueElementsCount];
+            LinePlanetTextures = new Texture2D[_uniqueElementsCount];
 
             _sprites = new List<Sprite>();
             _spriteMatrix = new Sprite[gameGrid.GridSize, gameGrid.GridSize];
 
-            
+            _collisionTimer = 0;
+
+
             base.Initialize();
         }
 
@@ -96,7 +100,7 @@ namespace GalaxyGame
                 Position = test_vector
             };
             gameGrid.SetTexture(Content.Load<Texture2D>("cosmos_background"));
-
+            LineBonus.Destroyer = new Destroyer(_texture);
 
 
             int plan_type;
@@ -127,6 +131,7 @@ namespace GalaxyGame
 
             SpawnNewPlanets();
             _timer += (float)gameTime.ElapsedGameTime.TotalSeconds;
+            _collisionTimer += (float)gameTime.ElapsedGameTime.TotalSeconds;
 
             //Основной метод update для планет (гравитация)
             //Выключено, пока элемент вращается
@@ -134,34 +139,43 @@ namespace GalaxyGame
             {
                 pl.Update(gameTime, _sprites);
             }
-
-
-            //TEST
-            Rectangle test = new Rectangle((int)gameGrid.Location.X, (int)gameGrid.Location.Y, gameGrid.Width, gameGrid.Height);
-            if (Mouse.GetState().RightButton == ButtonState.Pressed && !test.Contains(Mouse.GetState().Position))
+            //Проверка матчей и удаление совпадающих элементов
+            if (_collisionTimer > 1f)
             {
-                var xd = BlessRNG.Next(0, 5);
-                _sprites.Add(new LineBonus(_LinePlanetTextures[xd])
+                foreach(var pl in _sprites.ToArray())
                 {
-                    Position = Mouse.GetState().Position.ToVector2(),
-                    planetType = (PlanetType)xd
-                });
+                    pl.MatchDetection(gameTime, _sprites);
+                }
+                _collisionTimer = 0;
             }
+
+
+            //TEST //Спавнит тучу лайн бонусов вне игрового поля
+            //Rectangle test = new Rectangle((int)gameGrid.Location.X, (int)gameGrid.Location.Y, gameGrid.Width, gameGrid.Height);
+            //if (Mouse.GetState().RightButton == ButtonState.Pressed && !test.Contains(Mouse.GetState().Position))
+            //{
+            //    var xd = BlessRNG.Next(0, 5);
+            //    _sprites.Add(new LineBonus(_LinePlanetTextures[xd])
+            //    {
+            //        Position = Mouse.GetState().Position.ToVector2(),
+            //        planetType = (PlanetType)xd
+            //    });
+            //}
             //TEST
 
             //Заполнение матрицы и проверка матчей!
             //Keyboard.GetState().IsKeyDown(Keys.Space) &&
-            if (_timer > 1f && IsElementClicked == false)
-            {
-                _spriteMatrix = FillSpriteMatrix();
-                ScanMatrixForMatches();
-                //var res = ScanMatrixForNulls();
-                //if (res != false)
-                //{
-                //    ScanMatrixForMatches();
-                //}
-                _timer = 0;
-            }
+            //if (_timer > 1f && IsElementClicked == false)
+            //{
+            //    _spriteMatrix = FillSpriteMatrix();
+            //    ScanMatrixForMatches();
+            //    //var res = ScanMatrixForNulls();
+            //    //if (res != false)
+            //    //{
+            //    //    ScanMatrixForMatches();
+            //    //}
+            //    _timer = 0;
+            //}
 
             if (ScanMatrixForNulls() || !ScanMatrixForNulls())
             {
@@ -212,11 +226,11 @@ namespace GalaxyGame
                     vertical_match = GetMatchNumbers((0, 1), sec_loc.X, sec_loc.Y, _spriteMatrix) + GetMatchNumbers((0, -1), sec_loc.X, sec_loc.Y, _spriteMatrix);
                 }
 
-                if (horizontal_match < 2 && vertical_match < 2)
-                {
-                    CurrentClickedPlanet.Destinaition = SecondPlanet.Position;
-                    SecondPlanet.Destinaition = CurrentClickedPlanet.Position;
-                }
+                //if (horizontal_match < 2 && vertical_match < 2)
+                //{
+                //    CurrentClickedPlanet.Destinaition = SecondPlanet.Position;
+                //    SecondPlanet.Destinaition = CurrentClickedPlanet.Position;
+                //}
                 CurrentClickedPlanet = null;
                 SecondPlanet = null;
                 IsElementClicked = false;
@@ -266,7 +280,18 @@ namespace GalaxyGame
                 int i = 0;
                 while (i < gameGrid.GridSize)
                 {
-                    int res = GetMatchNumbers((1, 0), i, j, _spriteMatrix);
+                    int res = GetMatchNumbers((1, 0), i, j, _spriteMatrix);            
+                    if (res == 2)
+                    {
+                        int tp = BlessRNG.Next(0, 5);
+                        _sprites.Add(new LineBonus(LinePlanetTextures[tp])
+                        {
+                            planetType = (PlanetType)tp,
+                            Position = new Vector2(_spriteMatrix[i + BlessRNG.Next(0, res + 1), j].Position.X,gameGrid.Location.Y - 100 ),
+                            //Destroyer = new Destroyer(_texture),
+                            BonusDirection = new Vector2(1,0)
+                        });
+                    }
                     if (res >= 2)
                     {
                         while (res >= 0)
@@ -394,14 +419,17 @@ namespace GalaxyGame
             int i = 0;
             while (i < _sprites.Count)
             {
-                if (_sprites[i].IsRemoved == true)
+                if (_sprites[i].IsRemoved == true )
                 {
-                    int res = gameGrid.GetXLocationIndex(_sprites[i].Position);
-                    _spriteSpawner[res] += 1;
-                    //TEST
-                    //_sprites.RemoveAt(i + 1);
-                    //_spriteSpawner[gameGrid.GetLocationIndex(_sprites[i + 1].Position)] += 1;
-                    //TEST
+                    if (_sprites[i].GetType() == typeof(LineBonus))
+                    {
+                        _sprites[i].Update(null,_sprites);
+                    }
+                    if (_sprites[i].GetType() == typeof(Planet))
+                    {
+                        int res = gameGrid.GetXLocationIndex(_sprites[i].Position);
+                        _spriteSpawner[res] += 1;
+                    }
                     _sprites.RemoveAt(i);
                 }
                 else
@@ -410,7 +438,6 @@ namespace GalaxyGame
                 }
             }
         }
-
 
 
         protected override void Draw(GameTime gameTime)
@@ -443,14 +470,15 @@ namespace GalaxyGame
         //ПОдгрузка line бонусов
         private void LoadLineBonuses()
         {
-            _LinePlanetTextures[0] = Content.Load<Texture2D>("LineBonuses/earth_line");
-            _LinePlanetTextures[1] = Content.Load<Texture2D>("LineBonuses/neptune_line");
-            _LinePlanetTextures[2] = Content.Load<Texture2D>("LineBonuses/mars_line");
-            _LinePlanetTextures[3] = Content.Load<Texture2D>("LineBonuses/saturn_line");
-            _LinePlanetTextures[4] = Content.Load<Texture2D>("LineBonuses/asteroid_line");
+            LinePlanetTextures[0] = Content.Load<Texture2D>("LineBonuses/earth_line");
+            LinePlanetTextures[1] = Content.Load<Texture2D>("LineBonuses/neptune_line");
+            LinePlanetTextures[2] = Content.Load<Texture2D>("LineBonuses/mars_line");
+            LinePlanetTextures[3] = Content.Load<Texture2D>("LineBonuses/saturn_line");
+            LinePlanetTextures[4] = Content.Load<Texture2D>("LineBonuses/asteroid_line");
 
         }
 
-
+        #region Oblilette старые идеи
+        #endregion
     }
 }
