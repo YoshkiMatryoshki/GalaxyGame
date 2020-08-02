@@ -18,7 +18,7 @@ namespace GalaxyGame
         public static float radius;
         private float _angle = MathHelper.ToRadians(141); //угол относительно X в радианах
         private float _angleSpeed = 0.15f;//0.15f;
-        private float _fallingSpeed = 5f;
+        private float _fallingSpeed = 7f;
         private float _fallingDistance = 0; //дистанция падения элемента - будет влиять на отскок
 
 
@@ -75,11 +75,11 @@ namespace GalaxyGame
                     {
                         IsClicked = true;
                         Game1.CurrentClickedPlanet = this;
-                        Game1.IsElementClicked = true;
+                        //Game1.IsElementClicked = true;
                     }
                     else if (Game1.CurrentClickedPlanet == this)
                     {
-                        Game1.IsElementClicked = false;
+                        //Game1.IsElementClicked = false;
                         Game1.CurrentClickedPlanet = null;
                         MoveToOriginPlace();
                     }
@@ -99,7 +99,11 @@ namespace GalaxyGame
             }
 
             //Нет гравитации, если на форме выделен элемент
-            if (Game1.IsElementClicked == true)
+            //if (Game1.IsElementClicked == true)
+            //    return;
+            if (Game1.CurrentClickedPlanet != null && IsBottomElement(Game1.CurrentClickedPlanet))
+                return;
+            if (Game1.SecondPlanet != null && (IsBottomElement(Game1.SecondPlanet) || this == Game1.SecondPlanet))
                 return;
 
             //Падение элемента!

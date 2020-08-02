@@ -66,7 +66,6 @@ namespace GalaxyGame
                     column_resp.Value.RemoveAt(0);
                 }
             }
-        }
-        
+        }      
     }
 }
