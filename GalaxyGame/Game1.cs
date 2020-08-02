@@ -22,14 +22,13 @@ namespace GalaxyGame
     {
         //Основные параметры игры
         const int game_length = 60;
-        private int _gametimeLeft = game_length;
         private bool _gameStarted = false;
-        private int _score = 0;
         private int _uniqueElementsCount = 5;
         private float _timer;
         private float _collisionTimer;
         private GraphicsDeviceManager _graphics;
         private SpriteBatch _spriteBatch;
+        private GameInfo _gameInfo;
 
 
         //Размеры окна
@@ -39,6 +38,7 @@ namespace GalaxyGame
         public static GameGrid gameGrid;
         public static SpriteSpawner spriteSpawner;
         public static bool IsElementClicked = false;
+        private static List<Sprite> _backTextures; 
         private ButtonState _previousState;
         private ButtonState _currentState;
 
@@ -46,8 +46,8 @@ namespace GalaxyGame
 
         private Texture2D[] _planetTextures;
         public static Texture2D[] LinePlanetTextures;
+        public static Texture2D BombTexture;
         private List<Sprite> _sprites;
-        private int[] _spriteSpawner;
 
         private Sprite[,] _spriteMatrix;
 
@@ -55,13 +55,7 @@ namespace GalaxyGame
         public static Planet CurrentClickedPlanet;
         public static Planet SecondPlanet;
         
-
-        public Planet test_planet;
-        public Vector2 test_vector;
-        private Texture2D _texture;
-        public static Texture2D BombTexture;
-
-
+    
         public Game1()
         {
             _graphics = new GraphicsDeviceManager(this);
@@ -75,16 +69,15 @@ namespace GalaxyGame
             _graphics.PreferredBackBufferHeight += 60;
             _graphics.ApplyChanges();
 
-            test_vector = new Vector2(25, 25);
             gameGrid = new GameGrid(50);
-            gameGrid.SetLocation(new Vector2((_graphics.GraphicsDevice.PresentationParameters.Bounds.Width - gameGrid.Width) / 2, 40));
-            _spriteSpawner = new int[gameGrid.GridSize];
+            gameGrid.SetLocation(new Vector2((_graphics.GraphicsDevice.PresentationParameters.Bounds.Width - gameGrid.Width) - 50, 40));
             spriteSpawner = new SpriteSpawner(gameGrid.GridSize);
 
             _planetTextures = new Texture2D[_uniqueElementsCount];
-            LinePlanetTextures = new Texture2D[_uniqueElementsCount];
+            LinePlanetTextures = new Texture2D[_uniqueElementsCount * 2];
 
             _sprites = new List<Sprite>();
+            _backTextures = new List<Sprite>();
             
             _spriteMatrix = new Sprite[gameGrid.GridSize, gameGrid.GridSize];
 
@@ -98,16 +91,30 @@ namespace GalaxyGame
         {
             _spriteBatch = new SpriteBatch(GraphicsDevice);
 
-            BombTexture = Content.Load<Texture2D>("bomb");
-            _texture = Content.Load<Texture2D>("lil_hole");
+            BombTexture = Content.Load<Texture2D>("OtherElements/black");
+            _backTextures = new List<Sprite>()
+            {
+                new Sprite(Content.Load<Texture2D>("Background/fon"))
+                {
+                     Position = new Vector2(0, 0)
+                },
+                new Sprite(Content.Load<Texture2D>("Background/gameinfo"))
+                {
+                    Position = new Vector2(20,40)
+                }
+            };
+            _gameInfo = new GameInfo(Content.Load<SpriteFont>("Fonts/GameInfo"), _backTextures[1].Position)
+            {
+                GameTime = game_length,
+                Score = 0
+            };
+
+
             LoadPlanets();
             LoadLineBonuses();
-            test_planet = new Planet(_texture)
-            {
-                Position = test_vector
-            };
-            gameGrid.SetTexture(Content.Load<Texture2D>("cosmos_background"));
-            LineBonus.Destroyer = new Destroyer(_texture);
+
+            gameGrid.SetTexture(Content.Load<Texture2D>("Background/podkladka"));
+            LineBonus.Destroyer = new Destroyer(Content.Load<Texture2D>("OtherElements/destroyer"));
 
 
             int plan_type;
@@ -125,13 +132,31 @@ namespace GalaxyGame
                 
             }
 
+
         }
 
 
         protected override void Update(GameTime gameTime)
         {
-            //if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed || Keyboard.GetState().IsKeyDown(Keys.Escape))
-            //    Exit();
+            if (Keyboard.GetState().IsKeyDown(Keys.Escape))
+                Exit();
+            if (Keyboard.GetState().IsKeyDown(Keys.Space))
+            {
+                _gameStarted = true;
+                _gameInfo.GameTime = game_length;
+                _gameInfo.Score = 0;
+            }
+                
+            if (!_gameStarted)
+                return;
+            if (_timer >= 1f)
+            {
+                _gameInfo.GameTime -= (int)_timer;
+                _timer = 0;
+            }
+            if (_gameInfo.GameTime <= 0)
+                _gameStarted = false;
+
 
             _previousState = _currentState;
             _currentState = Mouse.GetState().LeftButton;
@@ -157,26 +182,10 @@ namespace GalaxyGame
             }
 
 
-            //TEST //Спавнит тучу лайн бонусов вне игрового поля
-            //Rectangle test = new Rectangle((int)gameGrid.Location.X, (int)gameGrid.Location.Y, gameGrid.Width, gameGrid.Height);
-            //if (Mouse.GetState().RightButton == ButtonState.Pressed && !test.Contains(Mouse.GetState().Position))
-            //{
-            //    var xd = BlessRNG.Next(0, 5);
-            //    _sprites.Add(new LineBonus(_LinePlanetTextures[xd])
-            //    {
-            //        Position = Mouse.GetState().Position.ToVector2(),
-            //        planetType = (PlanetType)xd
-            //    });
-            //}
-            //TEST
-
-
             if (ScanMatrixForNulls() || !ScanMatrixForNulls())
             {
                 SwapClickWorks();
             }
-
-
 
             PostUpdate(gameTime);
 
@@ -185,8 +194,63 @@ namespace GalaxyGame
 
 
 
+        //Уборка уничтоженных спрайтов
+        //и заполнение спавнера!
+        private void PostUpdate(GameTime gameTime)
+        {
+            int i = 0;
+            while (i < _sprites.Count)
+            {
+                if (_sprites[i].IsRemoved == true)
+                {
+                    int res = BlessRNG.Next(0, 5);
+                    if (_sprites[i].GetType() == typeof(LineBonus))
+                    {
+                        _sprites[i].Update(null, _sprites);
+                        spriteSpawner.AddPlanet(_sprites[i].Position, _planetTextures[res], res);
+                        _gameInfo.Score += 1;
+                    }
+                    if (_sprites[i].GetType() == typeof(Planet))
+                    {
+                        //int res = gameGrid.GetXLocationIndex(_sprites[i].Position);
+                        //_spriteSpawner[res] += 1;
+                        spriteSpawner.AddPlanet(_sprites[i].Position, _planetTextures[res], res);
+                        _gameInfo.Score += 1;
+                    }
+                    if (_sprites[i].GetType() == typeof(Bomb))
+                    {
+                        _sprites[i].Update(gameTime, _sprites);
+                        spriteSpawner.AddPlanet(_sprites[i].Position, _planetTextures[res], res);
+                    }
+                    _sprites.RemoveAt(i);
+                }
+                else
+                {
+                    i++;
+                }
+            }
+        }
 
+        protected override void Draw(GameTime gameTime)
+        {
+            GraphicsDevice.Clear(Color.CornflowerBlue);
 
+            _spriteBatch.Begin();
+            foreach (Sprite texture in _backTextures)
+            {
+                texture.Draw(_spriteBatch);
+            }
+            gameGrid.Draw(_spriteBatch);
+            foreach (var pl in _sprites)
+            {
+                pl.Draw(_spriteBatch);
+            }
+            _gameInfo.Draw(_spriteBatch);
+
+            _spriteBatch.End();
+
+            base.Draw(gameTime);
+        }
 
 
 
@@ -290,58 +354,6 @@ namespace GalaxyGame
 
         }
 
-        //Уборка уничтоженных спрайтов
-        //и заполнение спавнера!
-        private void PostUpdate(GameTime gameTime)
-        {
-            int i = 0;
-            while (i < _sprites.Count)
-            {
-                if (_sprites[i].IsRemoved == true )
-                {
-                    int res = BlessRNG.Next(0, 5);
-                    if (_sprites[i].GetType() == typeof(LineBonus))
-                    {
-                        _sprites[i].Update(null,_sprites);
-                        spriteSpawner.AddPlanet(_sprites[i].Position, _planetTextures[res], res);
-                    }
-                    if (_sprites[i].GetType() == typeof(Planet))
-                    {
-                        //int res = gameGrid.GetXLocationIndex(_sprites[i].Position);
-                        //_spriteSpawner[res] += 1;
-                        spriteSpawner.AddPlanet(_sprites[i].Position, _planetTextures[res], res);
-                    }
-                    if (_sprites[i].GetType() == typeof(Bomb))
-                    {
-                        _sprites[i].Update(gameTime, _sprites);
-                        spriteSpawner.AddPlanet(_sprites[i].Position, _planetTextures[res], res);
-                    }
-                    _sprites.RemoveAt(i);
-                }
-                else
-                {
-                    i++;
-                }
-            }
-        }
-
-
-        protected override void Draw(GameTime gameTime)
-        {
-            GraphicsDevice.Clear(Color.CornflowerBlue);
-
-            _spriteBatch.Begin();
-            gameGrid.Draw(_spriteBatch);   
-            test_planet.Draw(_spriteBatch);
-            foreach (var pl in _sprites)
-            {
-                pl.Draw(_spriteBatch);
-            }
-
-            _spriteBatch.End();
-
-            base.Draw(gameTime);
-        }
 
 
         //Загружает спрайты всех планеток.
@@ -356,11 +368,16 @@ namespace GalaxyGame
         //ПОдгрузка line бонусов
         private void LoadLineBonuses()
         {
-            LinePlanetTextures[0] = Content.Load<Texture2D>("LineBonuses/earth_line");
-            LinePlanetTextures[1] = Content.Load<Texture2D>("LineBonuses/neptune_line");
-            LinePlanetTextures[2] = Content.Load<Texture2D>("LineBonuses/mars_line");
-            LinePlanetTextures[3] = Content.Load<Texture2D>("LineBonuses/saturn_line");
-            LinePlanetTextures[4] = Content.Load<Texture2D>("LineBonuses/asteroid_line");
+            LinePlanetTextures[0] = Content.Load<Texture2D>("LineBonuses/earth_line_horizontal");
+            LinePlanetTextures[1] = Content.Load<Texture2D>("LineBonuses/neptune_line_horizontal");
+            LinePlanetTextures[2] = Content.Load<Texture2D>("LineBonuses/mars_line_horizontal");
+            LinePlanetTextures[3] = Content.Load<Texture2D>("LineBonuses/saturn_line_horizontal");
+            LinePlanetTextures[4] = Content.Load<Texture2D>("LineBonuses/asteroid_line_horizontal");
+            LinePlanetTextures[5] = Content.Load<Texture2D>("LineBonuses/earth_line_vertical");
+            LinePlanetTextures[6] = Content.Load<Texture2D>("LineBonuses/neptune_line_vertical");
+            LinePlanetTextures[7] = Content.Load<Texture2D>("LineBonuses/mars_line_vertical");
+            LinePlanetTextures[8] = Content.Load<Texture2D>("LineBonuses/saturn_line_vertical");
+            LinePlanetTextures[9] = Content.Load<Texture2D>("LineBonuses/asteroid_line_vertical");
 
         }
 

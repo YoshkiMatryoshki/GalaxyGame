@@ -151,160 +151,128 @@ namespace GalaxyGame
         #region MatchDetection
         public override void MatchDetection(GameTime gameTime, List<Sprite> sprites)
         {
-            if (IsRemoved == false && GetType() != typeof(Destroyer) || GetType() != typeof(Bomb))
+            if (IsRemoved == false && GetType() != typeof(Destroyer) && GetType() != typeof(Bomb))
             {
+                int indexOf;
                 List<Sprite> cleared_sprites = sprites.Where(sp => sp.GetType() != typeof(Bomb) && sp.GetType() != typeof(Destroyer)).Select(x => x).ToList();
 
                 //Горизонтальная проверка
-                List<Sprite> right_neighbours = cleared_sprites.Where(sprite => sprite.rectangle.Top == rectangle.Top && sprite.Position.X >= Position.X)
+                List<Sprite> x_neighbours = cleared_sprites.Where(sprite => sprite.rectangle.Top == rectangle.Top)
                     .OrderBy(x => x.Position.X).ToList();
-                int xd = GetMatchNumbers(right_neighbours, 0);
-                switch (xd)
-                {
-                    case 3:
-                        LineBonus temp_sprite = new LineBonus(Game1.LinePlanetTextures[(int)this.planetType])
-                        {
-                            planetType = this.planetType,
-                            Position = this.Position,
-                            BonusDirection = new Vector2(1, 0)
-                        };
-                        Game1.spriteSpawner.AddBonus(temp_sprite, sprites);
-                        break;
-                    case 4:
-                        Bomb bomb = new Bomb(Game1.BombTexture)
-                        {
-                            Position = this.Position,
-                        };
-                        Game1.spriteSpawner.AddBonus(bomb, sprites);
-                        break;
-                }
-                if (xd >= 2)
-                {
-                    IsRemoved = true;
-                    while (xd > 0)
-                    {
-                        right_neighbours[xd].IsRemoved = true;
-                        xd--;
-                    }
-                }
-                xd = 0;
-                //Вертикальная проверка
-                List<Sprite> bot_neighbours = cleared_sprites.Where(sprite => sprite.Position.X == Position.X && sprite.Position.Y >= Position.Y)
-                    .OrderBy(x => x.Position.Y).ToList();
-                xd = GetBottomMatchNumbers(bot_neighbours, 0);
-                switch (xd)
-                {
-                    case 3:
-                        var temp_sprite = new LineBonus(Game1.LinePlanetTextures[(int)this.planetType])
-                        {
-                            planetType = this.planetType,
-                            Position = this.Position,
-                            BonusDirection = new Vector2(0, 1)
-                        };
-                        Game1.spriteSpawner.AddBonus(temp_sprite, sprites);
-                        break;
-                    case 4:
-                        Bomb bomb = new Bomb(Game1.BombTexture)
-                        {
-                            Position = this.Position,
-                        };
-                        Game1.spriteSpawner.AddBonus(bomb, sprites);
-                        break;
-                }
-                if (xd >= 2)
-                {
-                    IsRemoved = true;
-                    while (xd > 0)
-                    {
-                        bot_neighbours[xd].IsRemoved = true;
-                        xd--;
-                    }
-                }
-            }
-        }
-        //Собирает по списку комбинацию из совпадающих элементов по горизонтали
-        private int GetMatchNumbers(List<Sprite> sprites, int ind)
-        {
-            int count = 0;
-            Planet curr_elem;
-            Planet next_elem;
-            try
-            {
-                curr_elem = sprites[ind] as Planet;
-                next_elem = sprites[ind + 1] as Planet;
-            }
-            catch
-            {
-                return 0;
-            }
-            if (curr_elem.planetType != next_elem.planetType)
-            {
-                return 0;
-            }
-            else if (curr_elem.IsRightElement(next_elem))
-            {
-                return 1 + GetMatchNumbers(sprites, ind + 1);
-            }
-            return count;
-        }
-        //Собирает по списку комбинацию из совпадающих элементов
-        private int GetBottomMatchNumbers(List<Sprite> sprites, int ind)
-        {
-            int count = 0;
-            Planet curr_elem;
-            Planet next_elem;
-            try
-            {
-                curr_elem = sprites[ind] as Planet;
-                next_elem = sprites[ind + 1] as Planet;
-            }
-            catch
-            {
-                return 0;
-            }
-            if (curr_elem.planetType != next_elem.planetType)
-            {
-                return 0;
-            }
-            else if (curr_elem.IsBottomElement(next_elem))
-            {
-                return 1 + GetBottomMatchNumbers(sprites, ind + 1);
-            }
-            return count;
+                indexOf = x_neighbours.IndexOf(this);
+                int right_matches = GetMatchElements(x_neighbours, indexOf, 1);
+                int left_matches = GetMatchElements(x_neighbours, indexOf, -1);
+                SpawnBombsDeleteMatches(sprites, ref indexOf, x_neighbours, ref right_matches, left_matches, new Vector2(1,0));
 
+                ////Вертикальная проверка
+                List<Sprite> y_neighbours = cleared_sprites.Where(sprite => sprite.Position.X == Position.X)
+                    .OrderBy(x => x.Position.Y).ToList();
+                indexOf = y_neighbours.IndexOf(this);
+                int bot_matches = GetBottomMatchElements(y_neighbours, indexOf, 1);
+                int top_matches = GetBottomMatchElements(y_neighbours, indexOf, -1);
+                SpawnBombsDeleteMatches(sprites, ref indexOf, y_neighbours, ref bot_matches, top_matches, new Vector2(0, 1));
+            }
+        }
+        // Right + left = размер матча
+        // в зависимости от размера спавнит новые элементы
+        //и удаляет матчи IsRemoved = true;
+        private void SpawnBombsDeleteMatches(List<Sprite> sprites, ref int indexOf, List<Sprite> x_neighbours, ref int right_matches, int left_matches, Vector2 destination)
+        {
+            if (right_matches + left_matches > 3)
+            {
+                Bomb bomb = new Bomb(Game1.BombTexture)
+                {
+                    Position = this.Position,
+                };
+                Game1.spriteSpawner.AddBonus(bomb, sprites);
+            }
+            else if (right_matches + left_matches == 3)
+            {
+                Texture2D texture;
+                if (destination.X == 1)
+                    texture = Game1.LinePlanetTextures[(int)this.planetType];
+                else
+                    texture = Game1.LinePlanetTextures[(int)this.planetType + 5];
+                LineBonus temp_sprite = new LineBonus(texture)
+                {
+                    planetType = this.planetType,
+                    Position = this.Position,
+                    BonusDirection = destination
+                };
+                Game1.spriteSpawner.AddBonus(temp_sprite, sprites);
+            }
+            if (right_matches + left_matches >= 2)
+            {
+                right_matches += indexOf;
+                indexOf -= left_matches;
+                while (indexOf <= right_matches)
+                {
+                    x_neighbours[indexOf].IsRemoved = true;
+                    indexOf++;
+                }
+            }
+        }
+
+        //Собирает по списку комбинацию из совпадающих элементов по горизонтали
+
+        private int GetMatchElements(List<Sprite> sprites, int start_ind, int destination)
+        {
+            int count = 0;
+            Planet curr_elem;
+            Planet next_elem;
+            try
+            {
+                curr_elem = sprites[start_ind] as Planet;
+                next_elem = sprites[start_ind + destination] as Planet;
+            }
+            catch
+            {
+                return 0;
+            }
+            if (curr_elem.planetType != next_elem.planetType)
+            {
+                return 0;
+            }
+            else if (destination == 1 && curr_elem.IsRightElement(next_elem))
+            {
+                return 1 + GetMatchElements(sprites, start_ind + destination, destination);
+            }
+            else if (destination == -1 && curr_elem.IsLeftElement(next_elem))
+            {
+                return 1 + GetMatchElements(sprites, start_ind + destination, destination);
+            }
+            return count;
+        }
+        private int GetBottomMatchElements(List<Sprite> sprites, int start_ind, int destination)
+        {
+            int count = 0;
+            Planet curr_elem;
+            Planet next_elem;
+            try
+            {
+                curr_elem = sprites[start_ind] as Planet;
+                next_elem = sprites[start_ind + destination] as Planet;
+            }
+            catch
+            {
+                return 0;
+            }
+            if (curr_elem.planetType != next_elem.planetType)
+            {
+                return 0;
+            }
+            else if (destination == 1 && curr_elem.IsBottomElement(next_elem))
+            {
+                return 1 + GetBottomMatchElements(sprites, start_ind + destination, destination);
+            }
+            else if (destination == -1 && curr_elem.IsTopElement(next_elem))
+            {
+                return 1 + GetBottomMatchElements(sprites, start_ind + destination, destination);
+            }
+            return count;
         }
 
         #endregion
-
-
-
-        //Падение и отскок элемента
-        private void Bounce()
-        {
-            if (Position.Y <= 400 && _bounce == false)
-            {
-                Position.Y += _fallingSpeed;
-                _fallingSpeed += 0.05f;
-                _fallingDistance += 0.03f;
-            }
-            else
-            {
-                _bounce = true;
-            }
-            //Отчаянная попытка сделать отскок
-            if (_bounce == true && _fallingDistance >= 0)
-            {
-                Position.Y -= _fallingSpeed;
-                _fallingSpeed -= 0.13f;
-                _fallingDistance -= 0.2f;
-            }
-            else
-            {
-                _bounce = false;
-            }
-        }
-
-
 
 
         #region Коллизии
@@ -313,6 +281,11 @@ namespace GalaxyGame
         {
             return (sprite.rectangle.Top <= rectangle.Y + rectangle.Height + 15 && sprite.rectangle.Top >= rectangle.Y - rectangle.Height - 15
                 && (Math.Abs(sprite.rectangle.Left - rectangle.Right) <= (Game1.gameGrid.BorderSize + _texture.Width / 8)));
+        }
+        private bool IsLeftElement(Sprite sprite)
+        {
+            return (sprite.rectangle.Top <= rectangle.Y + rectangle.Height + 15 && sprite.rectangle.Top >= rectangle.Y - rectangle.Height - 15
+                && (Math.Abs(sprite.rectangle.Right - rectangle.Left) <= (Game1.gameGrid.BorderSize + _texture.Width / 8)));
         }
         //Проверка на коллизию с нижним элементом
         //В пределах колонны 
@@ -323,6 +296,14 @@ namespace GalaxyGame
                 &&
                 (Math.Abs(sprite.rectangle.Top - rectangle.Bottom) <= (Game1.gameGrid.BorderSize + _texture.Height / 2));
         }
+        private bool IsTopElement(Sprite sprite)
+        {
+            return (sprite.rectangle.Left >= rectangle.Left && sprite.rectangle.Left <= rectangle.Right
+                || sprite.rectangle.Right <= rectangle.Right && sprite.rectangle.Right >= rectangle.Left)
+                &&
+                (Math.Abs(sprite.rectangle.Bottom - rectangle.Top) <= (Game1.gameGrid.BorderSize + _texture.Height / 2));
+        }
+
         #endregion
     }
 }

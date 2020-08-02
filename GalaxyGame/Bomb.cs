@@ -14,7 +14,7 @@ namespace GalaxyGame
         {
             get
             {
-                return new Rectangle((int)(Position.X- _gridBorder - _texture.Width), (int)(Position.Y + 2*_texture.Height+ _gridBorder)
+                return new Rectangle((int)(Position.X- _gridBorder - _texture.Width), (int)(Position.Y - _texture.Height - _gridBorder)
                     , _texture.Width *3, _texture.Height * 3);
             }
         }
@@ -25,7 +25,7 @@ namespace GalaxyGame
         public override void Update(GameTime gameTime, List<Sprite> sprites)
         {
             _detonateTimer += (float)gameTime.ElapsedGameTime.TotalSeconds;
-            if (_detonateTimer > 0.25f)
+            if (_detonateTimer > 1f)
             {
                 IsRemoved = true;
             }
