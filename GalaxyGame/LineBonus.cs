@@ -18,10 +18,6 @@ namespace GalaxyGame
 
         public override void Update(GameTime gameTime, List<Sprite> sprites)
         {
-            if (Mouse.GetState().RightButton == ButtonState.Pressed && rectangle.Contains(Mouse.GetState().Position))
-            {
-                Position.X += 5f;
-            }
             base.Update(gameTime, sprites);
             if (IsRemoved == true)
             {

@@ -129,7 +129,6 @@ namespace GalaxyGame
             Position.Y = Origin.Y - _texture.Height / 8;
         }
 
-
         //Препятствует накладыванию спрайтов друг на друга при респавне планет
         public void SpawnCollision(List<Sprite> sprites)
         {
@@ -140,13 +139,14 @@ namespace GalaxyGame
             int res = this_columnsprites.Min(x => x.rectangle.Top);
             Position.Y = res - Game1.gameGrid.BorderSize - _texture.Height;
         }
-        
         private void Rotate()
         {
             Position.X = (float)(Origin.X + Math.Cos(_angle) * radius);
             Position.Y = (float)(Origin.Y + Math.Sin(_angle) * radius);
             _angle -= _angleSpeed;
         }
+
+
 
         #region MatchDetection
         public override void MatchDetection(GameTime gameTime, List<Sprite> sprites)
@@ -159,14 +159,24 @@ namespace GalaxyGame
                 List<Sprite> right_neighbours = cleared_sprites.Where(sprite => sprite.rectangle.Top == rectangle.Top && sprite.Position.X >= Position.X)
                     .OrderBy(x => x.Position.X).ToList();
                 int xd = GetMatchNumbers(right_neighbours, 0);
-                if (xd == 3)
+                switch (xd)
                 {
-                    sprites.Add(new LineBonus(Game1.LinePlanetTextures[(int)this.planetType])
-                    {
-                        planetType = this.planetType,
-                        Position = this.Position,
-                        BonusDirection = new Vector2(1, 0)
-                    });
+                    case 3:
+                        LineBonus temp_sprite = new LineBonus(Game1.LinePlanetTextures[(int)this.planetType])
+                        {
+                            planetType = this.planetType,
+                            Position = this.Position,
+                            BonusDirection = new Vector2(1, 0)
+                        };
+                        Game1.spriteSpawner.AddBonus(temp_sprite, sprites);
+                        break;
+                    case 4:
+                        Bomb bomb = new Bomb(Game1.BombTexture)
+                        {
+                            Position = this.Position,
+                        };
+                        Game1.spriteSpawner.AddBonus(bomb, sprites);
+                        break;
                 }
                 if (xd >= 2)
                 {
@@ -182,14 +192,24 @@ namespace GalaxyGame
                 List<Sprite> bot_neighbours = cleared_sprites.Where(sprite => sprite.Position.X == Position.X && sprite.Position.Y >= Position.Y)
                     .OrderBy(x => x.Position.Y).ToList();
                 xd = GetBottomMatchNumbers(bot_neighbours, 0);
-                if (xd == 3)
+                switch (xd)
                 {
-                    sprites.Add(new LineBonus(Game1.LinePlanetTextures[(int)this.planetType])
-                    {
-                        planetType = this.planetType,
-                        Position = this.Position,
-                        BonusDirection = new Vector2(0, 1)
-                    });
+                    case 3:
+                        var temp_sprite = new LineBonus(Game1.LinePlanetTextures[(int)this.planetType])
+                        {
+                            planetType = this.planetType,
+                            Position = this.Position,
+                            BonusDirection = new Vector2(0, 1)
+                        };
+                        Game1.spriteSpawner.AddBonus(temp_sprite, sprites);
+                        break;
+                    case 4:
+                        Bomb bomb = new Bomb(Game1.BombTexture)
+                        {
+                            Position = this.Position,
+                        };
+                        Game1.spriteSpawner.AddBonus(bomb, sprites);
+                        break;
                 }
                 if (xd >= 2)
                 {
@@ -202,6 +222,58 @@ namespace GalaxyGame
                 }
             }
         }
+        //Собирает по списку комбинацию из совпадающих элементов по горизонтали
+        private int GetMatchNumbers(List<Sprite> sprites, int ind)
+        {
+            int count = 0;
+            Planet curr_elem;
+            Planet next_elem;
+            try
+            {
+                curr_elem = sprites[ind] as Planet;
+                next_elem = sprites[ind + 1] as Planet;
+            }
+            catch
+            {
+                return 0;
+            }
+            if (curr_elem.planetType != next_elem.planetType)
+            {
+                return 0;
+            }
+            else if (curr_elem.IsRightElement(next_elem))
+            {
+                return 1 + GetMatchNumbers(sprites, ind + 1);
+            }
+            return count;
+        }
+        //Собирает по списку комбинацию из совпадающих элементов
+        private int GetBottomMatchNumbers(List<Sprite> sprites, int ind)
+        {
+            int count = 0;
+            Planet curr_elem;
+            Planet next_elem;
+            try
+            {
+                curr_elem = sprites[ind] as Planet;
+                next_elem = sprites[ind + 1] as Planet;
+            }
+            catch
+            {
+                return 0;
+            }
+            if (curr_elem.planetType != next_elem.planetType)
+            {
+                return 0;
+            }
+            else if (curr_elem.IsBottomElement(next_elem))
+            {
+                return 1 + GetBottomMatchNumbers(sprites, ind + 1);
+            }
+            return count;
+
+        }
+
         #endregion
 
 
@@ -233,58 +305,9 @@ namespace GalaxyGame
         }
 
 
-        //Собирает по списку комбинацию из совпадающих элементов по горизонтали
-        private int GetMatchNumbers(List<Sprite> sprites, int ind)
-        {
-            int count = 0;
-            Planet curr_elem = sprites[ind] as Planet;
-            Planet next_elem;
-            try
-            {
-                next_elem = sprites[ind + 1] as Planet;
-            }
-            catch
-            {
-                return 0;
-            }
-            if (curr_elem.planetType != next_elem.planetType)
-            {
-                return 0;
-            }
-            else if (curr_elem.IsRightElement(next_elem))
-            {
-                return 1 + GetMatchNumbers(sprites, ind + 1);
-            }
-            return count;
-        }
-        //Собирает по списку комбинацию из совпадающих элементов
-        private int GetBottomMatchNumbers(List<Sprite> sprites, int ind)
-        {
-            int count = 0;
-            Planet curr_elem = sprites[ind] as Planet;
-            Planet next_elem;
-            try
-            {
-                next_elem = sprites[ind + 1] as Planet;
-            }
-            catch
-            {
-                return 0;
-            }
-            if (curr_elem.planetType != next_elem.planetType)
-            {
-                return 0;
-            }
-            else if (curr_elem.IsBottomElement(next_elem))
-            {
-                return 1 + GetBottomMatchNumbers(sprites, ind + 1);
-            }
-            return count;
-
-        }
 
 
-
+        #region Коллизии
         //Проверка на коллизию с правым элементов
         private bool IsRightElement(Sprite sprite)
         {
@@ -300,5 +323,6 @@ namespace GalaxyGame
                 &&
                 (Math.Abs(sprite.rectangle.Top - rectangle.Bottom) <= (Game1.gameGrid.BorderSize + _texture.Height / 2));
         }
+        #endregion
     }
 }

@@ -13,7 +13,7 @@ namespace GalaxyGame
         public Vector2 Destination;
         public float speed = 5f;
         
-        private  Rectangle _destroy_rect
+        private  Rectangle _destroyRect
         {
             get
             {
@@ -44,7 +44,7 @@ namespace GalaxyGame
             {
                 if (sp.GetType() != typeof(Destroyer))
                 {
-                    if (sp.rectangle.Contains(_destroy_rect))
+                    if (sp.rectangle.Contains(_destroyRect))
                     {
                         sp.IsRemoved = true;
                     }

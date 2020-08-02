@@ -37,6 +37,7 @@ namespace GalaxyGame
 
 
         public static GameGrid gameGrid;
+        public static SpriteSpawner spriteSpawner;
         public static bool IsElementClicked = false;
         private ButtonState _previousState;
         private ButtonState _currentState;
@@ -47,6 +48,7 @@ namespace GalaxyGame
         public static Texture2D[] LinePlanetTextures;
         private List<Sprite> _sprites;
         private int[] _spriteSpawner;
+
         private Sprite[,] _spriteMatrix;
 
 
@@ -57,6 +59,7 @@ namespace GalaxyGame
         public Planet test_planet;
         public Vector2 test_vector;
         private Texture2D _texture;
+        public static Texture2D BombTexture;
 
 
         public Game1()
@@ -76,10 +79,13 @@ namespace GalaxyGame
             gameGrid = new GameGrid(50);
             gameGrid.SetLocation(new Vector2((_graphics.GraphicsDevice.PresentationParameters.Bounds.Width - gameGrid.Width) / 2, 40));
             _spriteSpawner = new int[gameGrid.GridSize];
+            spriteSpawner = new SpriteSpawner(gameGrid.GridSize);
+
             _planetTextures = new Texture2D[_uniqueElementsCount];
             LinePlanetTextures = new Texture2D[_uniqueElementsCount];
 
             _sprites = new List<Sprite>();
+            
             _spriteMatrix = new Sprite[gameGrid.GridSize, gameGrid.GridSize];
 
             _collisionTimer = 0;
@@ -92,6 +98,7 @@ namespace GalaxyGame
         {
             _spriteBatch = new SpriteBatch(GraphicsDevice);
 
+            BombTexture = Content.Load<Texture2D>("bomb");
             _texture = Content.Load<Texture2D>("lil_hole");
             LoadPlanets();
             LoadLineBonuses();
@@ -163,19 +170,6 @@ namespace GalaxyGame
             //}
             //TEST
 
-            //Заполнение матрицы и проверка матчей!
-            //Keyboard.GetState().IsKeyDown(Keys.Space) &&
-            //if (_timer > 1f && IsElementClicked == false)
-            //{
-            //    _spriteMatrix = FillSpriteMatrix();
-            //    ScanMatrixForMatches();
-            //    //var res = ScanMatrixForNulls();
-            //    //if (res != false)
-            //    //{
-            //    //    ScanMatrixForMatches();
-            //    //}
-            //    _timer = 0;
-            //}
 
             if (ScanMatrixForNulls() || !ScanMatrixForNulls())
             {
@@ -184,10 +178,20 @@ namespace GalaxyGame
 
 
 
-            PostUpdate();
+            PostUpdate(gameTime);
 
             base.Update(gameTime);
         }
+
+
+
+
+
+
+
+
+
+
 
         private void SwapClickWorks()
         {
@@ -255,136 +259,6 @@ namespace GalaxyGame
             return res;
         }
 
-        //Проверка, полностью ли заполнена матрица
-        //return true if wegucci
-        private bool ScanMatrixForNulls()
-        {
-            var res = _spriteMatrix.GetEnumerator();
-            res.Reset();
-            while (res.MoveNext())
-            {
-                if (res.Current == null)
-                {
-                    return false;
-                }
-            }
-            return true;
-        }
-
-        //Поиск совпадающих элементов
-        private void ScanMatrixForMatches()
-        {
-            //проход таблицы по горизонтали
-            for (int j = 0; j < gameGrid.GridSize; j++)
-            {
-                int i = 0;
-                while (i < gameGrid.GridSize)
-                {
-                    int res = GetMatchNumbers((1, 0), i, j, _spriteMatrix);            
-                    if (res == 2)
-                    {
-                        int tp = BlessRNG.Next(0, 5);
-                        _sprites.Add(new LineBonus(LinePlanetTextures[tp])
-                        {
-                            planetType = (PlanetType)tp,
-                            Position = new Vector2(_spriteMatrix[i + BlessRNG.Next(0, res + 1), j].Position.X,gameGrid.Location.Y - 100 ),
-                            //Destroyer = new Destroyer(_texture),
-                            BonusDirection = new Vector2(1,0)
-                        });
-                    }
-                    if (res >= 2)
-                    {
-                        while (res >= 0)
-                        {
-                            _spriteMatrix[i, j].IsRemoved = true;
-                            i++;
-                            res--;
-                        }
-                    }
-                    else
-                    {
-                        i++;
-                    }
-
-                }
-            }
-            //проход таблицы по вертикали
-            for (int i = 0; i < gameGrid.GridSize; i++)
-            {
-                int j = 0;
-                while (j < gameGrid.GridSize)
-                {
-                    int res = GetMatchNumbers((0, 1), i, j, _spriteMatrix);
-                    if (res >= 2)
-                    {
-                        while (res >= 0)
-                        {
-                            _spriteMatrix[i, j].IsRemoved = true;
-                            j++;
-                            res--;
-                        }
-                    }
-                    else
-                    {
-                        j++;
-                    }
-
-                }
-            }
-        }
-
-        //Заполняет матрицу спрайтов, не поверите, спрайтами на основе их Position.
-        private Sprite[,] FillSpriteMatrix()
-        {
-            Sprite[,] result_arr = new Sprite[gameGrid.GridSize, gameGrid.GridSize];
-            foreach (Sprite sp in _sprites)
-            {
-                //var x_pos = gameGrid.GetXLocationIndex(sp.Position);
-                //var y_pos = gameGrid.GetYLocationIndex(sp.Position);
-                var res_point = gameGrid.GetXYLocationIndexes(sp.Position);
-                if (res_point.X != -1 && res_point.Y != -1)
-                    result_arr[res_point.X, res_point.Y] = sp;
-            }
-
-            return result_arr;
-        }
-
-        private int GetMatchNumbers( (int,int) destination, int i ,int j, Sprite[,] arr)
-        {
-            int count = 0;
-            Planet curr_elem = arr[i, j] as Planet;
-            Planet next_elem;
-            try
-            {
-                next_elem = arr[i + destination.Item1, j + destination.Item2] as Planet;
-            }
-            catch
-            {
-                return 0;
-            }
-            try
-            {
-                if (curr_elem.planetType != next_elem.planetType)
-                {
-                    return 0;
-                }
-            }
-            catch
-            {
-                return 0;
-            }
-            //if (curr_elem.planetType != next_elem.planetType)
-            //{
-            //    return 0;
-            //}
-
-
-            if (curr_elem.planetType == next_elem.planetType)
-            {
-                count += 1 + GetMatchNumbers(destination, i + destination.Item1, j + destination.Item2, arr);
-            }
-            return count;
-        }
 
 
 
@@ -392,43 +266,55 @@ namespace GalaxyGame
         //Respawn new planets
         private void SpawnNewPlanets()
         {
-            int plan_type;
-            Planet new_sprite;
-            float start_coodr = gameGrid.Location.Y - 100;
-            for (int i = 0; i < _spriteSpawner.Length; i++)
-            {
-                while (_spriteSpawner[i] > 0)
-                {
-                    plan_type = BlessRNG.Next(0, 5);
-                    new_sprite = new Planet(_planetTextures[plan_type])
-                    {
-                        Position = new Vector2(gameGrid.SpriteLocations[0, i].X, start_coodr),
-                        planetType = (PlanetType)plan_type
-                    };
-                    new_sprite.SpawnCollision(_sprites);
-                    _sprites.Add(new_sprite);
-                    _spriteSpawner[i]--;
-                }
-            }
+            //int plan_type;
+            //Planet new_sprite;
+            //float start_coodr = gameGrid.Location.Y - 100;
+            //for (int i = 0; i < _spriteSpawner.Length; i++)
+            //{
+            //    while (_spriteSpawner[i] > 0)
+            //    {
+            //        plan_type = BlessRNG.Next(0, 5);
+            //        new_sprite = new Planet(_planetTextures[plan_type])
+            //        {
+            //            Position = new Vector2(gameGrid.SpriteLocations[0, i].X, start_coodr),
+            //            planetType = (PlanetType)plan_type
+            //        };
+            //        new_sprite.SpawnCollision(_sprites);
+            //        _sprites.Add(new_sprite);
+            //        _spriteSpawner[i]--;
+            //    }
+            //}
+            spriteSpawner.SpawnAll(_sprites);
+
+
+
         }
 
         //Уборка уничтоженных спрайтов
         //и заполнение спавнера!
-        private void PostUpdate()
+        private void PostUpdate(GameTime gameTime)
         {
             int i = 0;
             while (i < _sprites.Count)
             {
                 if (_sprites[i].IsRemoved == true )
                 {
+                    int res = BlessRNG.Next(0, 5);
                     if (_sprites[i].GetType() == typeof(LineBonus))
                     {
                         _sprites[i].Update(null,_sprites);
+                        spriteSpawner.AddPlanet(_sprites[i].Position, _planetTextures[res], res);
                     }
                     if (_sprites[i].GetType() == typeof(Planet))
                     {
-                        int res = gameGrid.GetXLocationIndex(_sprites[i].Position);
-                        _spriteSpawner[res] += 1;
+                        //int res = gameGrid.GetXLocationIndex(_sprites[i].Position);
+                        //_spriteSpawner[res] += 1;
+                        spriteSpawner.AddPlanet(_sprites[i].Position, _planetTextures[res], res);
+                    }
+                    if (_sprites[i].GetType() == typeof(Bomb))
+                    {
+                        _sprites[i].Update(gameTime, _sprites);
+                        spriteSpawner.AddPlanet(_sprites[i].Position, _planetTextures[res], res);
                     }
                     _sprites.RemoveAt(i);
                 }
@@ -479,6 +365,150 @@ namespace GalaxyGame
         }
 
         #region Oblilette старые идеи
+
+        //Проверка, полностью ли заполнена матрица
+        //return true if wegucci
+        private bool ScanMatrixForNulls()
+        {
+            var res = _spriteMatrix.GetEnumerator();
+            res.Reset();
+            while (res.MoveNext())
+            {
+                if (res.Current == null)
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        //Поиск совпадающих элементов
+        private void ScanMatrixForMatches()
+        {
+            //проход таблицы по горизонтали
+            for (int j = 0; j < gameGrid.GridSize; j++)
+            {
+                int i = 0;
+                while (i < gameGrid.GridSize)
+                {
+                    int res = GetMatchNumbers((1, 0), i, j, _spriteMatrix);
+                    if (res == 2)
+                    {
+                        int tp = BlessRNG.Next(0, 5);
+                        _sprites.Add(new LineBonus(LinePlanetTextures[tp])
+                        {
+                            planetType = (PlanetType)tp,
+                            Position = new Vector2(_spriteMatrix[i + BlessRNG.Next(0, res + 1), j].Position.X, gameGrid.Location.Y - 100),
+                            //Destroyer = new Destroyer(_texture),
+                            BonusDirection = new Vector2(1, 0)
+                        });
+                    }
+                    if (res >= 2)
+                    {
+                        while (res >= 0)
+                        {
+                            _spriteMatrix[i, j].IsRemoved = true;
+                            i++;
+                            res--;
+                        }
+                    }
+                    else
+                    {
+                        i++;
+                    }
+
+                }
+            }
+            //проход таблицы по вертикали
+            for (int i = 0; i < gameGrid.GridSize; i++)
+            {
+                int j = 0;
+                while (j < gameGrid.GridSize)
+                {
+                    int res = GetMatchNumbers((0, 1), i, j, _spriteMatrix);
+                    if (res >= 2)
+                    {
+                        while (res >= 0)
+                        {
+                            _spriteMatrix[i, j].IsRemoved = true;
+                            j++;
+                            res--;
+                        }
+                    }
+                    else
+                    {
+                        j++;
+                    }
+
+                }
+            }
+        }
+        //Заполняет матрицу спрайтов, не поверите, спрайтами на основе их Position.
+        private Sprite[,] FillSpriteMatrix()
+        {
+            Sprite[,] result_arr = new Sprite[gameGrid.GridSize, gameGrid.GridSize];
+            foreach (Sprite sp in _sprites)
+            {
+                //var x_pos = gameGrid.GetXLocationIndex(sp.Position);
+                //var y_pos = gameGrid.GetYLocationIndex(sp.Position);
+                var res_point = gameGrid.GetXYLocationIndexes(sp.Position);
+                if (res_point.X != -1 && res_point.Y != -1)
+                    result_arr[res_point.X, res_point.Y] = sp;
+            }
+
+            return result_arr;
+        }
+        private int GetMatchNumbers((int, int) destination, int i, int j, Sprite[,] arr)
+        {
+            int count = 0;
+            Planet curr_elem = arr[i, j] as Planet;
+            Planet next_elem;
+            try
+            {
+                next_elem = arr[i + destination.Item1, j + destination.Item2] as Planet;
+            }
+            catch
+            {
+                return 0;
+            }
+            try
+            {
+                if (curr_elem.planetType != next_elem.planetType)
+                {
+                    return 0;
+                }
+            }
+            catch
+            {
+                return 0;
+            }
+            //if (curr_elem.planetType != next_elem.planetType)
+            //{
+            //    return 0;
+            //}
+
+
+            if (curr_elem.planetType == next_elem.planetType)
+            {
+                count += 1 + GetMatchNumbers(destination, i + destination.Item1, j + destination.Item2, arr);
+            }
+            return count;
+        }
+
+
+        //Заполнение матрицы и проверка матчей!
+        //Keyboard.GetState().IsKeyDown(Keys.Space) &&
+        //if (_timer > 1f && IsElementClicked == false)
+        //{
+        //    _spriteMatrix = FillSpriteMatrix();
+        //    ScanMatrixForMatches();
+        //    //var res = ScanMatrixForNulls();
+        //    //if (res != false)
+        //    //{
+        //    //    ScanMatrixForMatches();
+        //    //}
+        //    _timer = 0;
+        //}
         #endregion
     }
 }
