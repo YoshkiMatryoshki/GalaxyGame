@@ -21,6 +21,7 @@ namespace GalaxyGame
             base.Update(gameTime, sprites);
             if (IsRemoved == true)
             {
+                Game1.IsDestroyerActive = true;
                 //1st one
                 Destroyer destroyer = Destroyer.Clone() as Destroyer;
                 //destroyer.speed = 3f;

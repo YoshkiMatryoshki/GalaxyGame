@@ -11,7 +11,6 @@ namespace GalaxyGame
     {
         public LineBonus Parent;
         public Vector2 Destination;
-        public float speed = 5f;
         
         private  Rectangle _destroyRect
         {
@@ -23,12 +22,13 @@ namespace GalaxyGame
 
         public Destroyer(Texture2D texture) : base(texture)
         {
-
+            speed = 8f;
         }
 
         public override void Update(GameTime gameTime, List<Sprite> sprite)
         {
-            Rectangle rec = new Rectangle((int)Game1.gameGrid.Location.X-100, (int)Game1.gameGrid.Location.Y, Game1.gameGrid.Width+300, Game1.gameGrid.Height+100);
+            //Rectangle rec = new Rectangle((int)Game1.gameGrid.Location.X-100, (int)Game1.gameGrid.Location.Y, Game1.gameGrid.Width+300, Game1.gameGrid.Height+100);
+            Rectangle rec = new Rectangle((int)Game1.gameGrid.Location.X, (int)Game1.gameGrid.Location.Y, Game1.gameGrid.Width, Game1.gameGrid.Height);
 
             if (rec.Contains(this.rectangle))
             {

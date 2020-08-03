@@ -18,7 +18,7 @@ namespace GalaxyGame
         public static float radius;
         private float _angle = MathHelper.ToRadians(141); //угол относительно X в радианах
         private float _angleSpeed = 0.15f;//0.15f;
-        private float _fallingSpeed = 7f;
+        private float _fallingSpeed = 6f;
         private float _fallingDistance = 0; //дистанция падения элемента - будет влиять на отскок
 
 
@@ -41,8 +41,8 @@ namespace GalaxyGame
         //По аналогии с основным классом Update -1st/ Draw -2nd
         public override void Update(GameTime gameTime, List<Sprite> sprites)
         {
-            _previousState = _currentState;
-            _currentState = Mouse.GetState().LeftButton;
+            //_previousState = _currentState;
+            //_currentState = Mouse.GetState().LeftButton;
 
             //Swap элементов
             if (Destinaition.X != 0 && Destinaition.Y != 0 && Position != Destinaition)
@@ -64,47 +64,18 @@ namespace GalaxyGame
                 Destinaition.X = 0;
                 Destinaition.Y = 0;
             }
-
-            //Установка кликнутых элементов
-            if (_currentState == ButtonState.Pressed && _previousState == ButtonState.Released)
-            {
-                bool IsItME = rectangle.Contains(Mouse.GetState().Position);
-                if (IsItME)
-                {
-                    if (Game1.CurrentClickedPlanet == null)
-                    {
-                        IsClicked = true;
-                        Game1.CurrentClickedPlanet = this;
-                        //Game1.IsElementClicked = true;
-                    }
-                    else if (Game1.CurrentClickedPlanet == this)
-                    {
-                        //Game1.IsElementClicked = false;
-                        Game1.CurrentClickedPlanet = null;
-                        MoveToOriginPlace();
-                    }
-                    if (Game1.CurrentClickedPlanet!= null && Game1.CurrentClickedPlanet != this)
-                    {
-                        Game1.SecondPlanet = this;
-                    }
-
-                }
-            }
-            
-            //Вращение выделенного элемента
-            if (IsClicked == true)
-            {
-                Rotate();
+            if (Game1.FieldHasNoMatches || Game1.IsDestroyerActive)
                 return;
-            }
-
             //Нет гравитации, если на форме выделен элемент
             //if (Game1.IsElementClicked == true)
             //    return;
-            if (Game1.CurrentClickedPlanet != null && IsBottomElement(Game1.CurrentClickedPlanet))
-                return;
-            if (Game1.SecondPlanet != null && (IsBottomElement(Game1.SecondPlanet) || this == Game1.SecondPlanet))
-                return;
+            //if (Game1.CurrentClickedPlanet != null && IsBottomElement(Game1.CurrentClickedPlanet))
+            //    return;
+            //if (Game1.SecondPlanet != null && (IsBottomElement(Game1.SecondPlanet) || this == Game1.SecondPlanet))
+            //    return;
+            //if (IsClicked)
+            //    return;
+
 
             //Падение элемента!
             float bot = Game1.gameGrid.BottomLine;
@@ -151,6 +122,41 @@ namespace GalaxyGame
         }
 
 
+        public override void FishForClick()
+        {
+            _previousState = _currentState;
+            _currentState = Mouse.GetState().LeftButton;
+            //Установка кликнутых элементов
+            if (_currentState == ButtonState.Pressed && _previousState == ButtonState.Released)
+            {
+                bool IsItME = rectangle.Contains(Mouse.GetState().Position);
+                if (IsItME)
+                {
+                    if (Game1.CurrentClickedPlanet == null)
+                    {
+                        IsClicked = true;
+                        Game1.CurrentClickedPlanet = this;
+                        //Game1.IsElementClicked = true;
+                    }
+                    else if (Game1.CurrentClickedPlanet == this)
+                    {
+                        //Game1.IsElementClicked = false;
+                        Game1.CurrentClickedPlanet = null;
+                        MoveToOriginPlace();
+                    }
+                    if (Game1.CurrentClickedPlanet != null && Game1.CurrentClickedPlanet != this)
+                    {
+                        Game1.SecondPlanet = this;
+                    }
+
+                }
+            }
+            //Вращение выделенного элемента
+            if (IsClicked == true)
+            {
+                Rotate();
+            }
+        }
 
         #region MatchDetection
         public override void MatchDetection(GameTime gameTime, List<Sprite> sprites)
@@ -187,6 +193,7 @@ namespace GalaxyGame
                 Bomb bomb = new Bomb(Game1.BombTexture)
                 {
                     Position = this.Position,
+                    planetType = PlanetType.BlackHole
                 };
                 Game1.spriteSpawner.AddBonus(bomb, sprites);
             }

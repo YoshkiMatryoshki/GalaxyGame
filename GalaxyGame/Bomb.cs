@@ -25,7 +25,7 @@ namespace GalaxyGame
         public override void Update(GameTime gameTime, List<Sprite> sprites)
         {
             _detonateTimer += (float)gameTime.ElapsedGameTime.TotalSeconds;
-            if (_detonateTimer > 1f)
+            if (_detonateTimer > 0.5f)
             {
                 IsRemoved = true;
             }

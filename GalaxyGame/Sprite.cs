@@ -44,6 +44,10 @@ namespace GalaxyGame
         {
 
         }
+        public virtual void FishForClick()
+        {
+
+        }
 
         public object Clone()
         {

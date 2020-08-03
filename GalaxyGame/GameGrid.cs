@@ -1,9 +1,13 @@
 ﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using SharpDX.Direct2D1.Effects;
+using SharpDX.WIC;
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
+using System.Threading;
 
 namespace GalaxyGame
 {
@@ -23,6 +27,7 @@ namespace GalaxyGame
         public int BorderSize { get; } = 4;
         private Texture2D _texture;
         private Rectangle _resizeTextureRec;
+        private int[,] matrix;
 
         public GameGrid(int elem_texture_edge)
         {
@@ -30,7 +35,8 @@ namespace GalaxyGame
             Width = BorderSize * (GridSize + 1) + (GridSize * elem_texture_edge);
             Height = Width;
             CellSize = elem_texture_edge;
-            
+            matrix = new int[GridSize, GridSize];
+            ClearMatrix();
        
 
         }
@@ -107,7 +113,7 @@ namespace GalaxyGame
             {
                 if (sprite_pos.X == SpriteLocations[0, i].X)
                 {
-                    res.X = i;
+                    res.Y = i; //ВОТ ТУТ ВНИМАТЕЛЬНО!!! X_Y Свапаются. бородатая затея бзв
                     i = GridSize;
                 }
                 i++;
@@ -117,7 +123,7 @@ namespace GalaxyGame
             {
                 if (sprite_pos.Y == SpriteLocations[i, 0].Y)
                 {
-                    res.Y = i;
+                    res.X = i;  //ВОТ ТУТ ВНИМАТЕЛЬНО!!! X_Y Свапаются. бородатая затея бзв
                     i = GridSize;
                 }
                 i++;
@@ -125,5 +131,101 @@ namespace GalaxyGame
 
             return res;
         }
+
+
+
+
+        #region CheckMatchesNaMinimalkax
+        public void FillCheckMatrix(List<Sprite> sprites)
+        {
+            List<Sprite> cleared_sprites = sprites.Where(sp => sp.GetType() != typeof(Destroyer)).Select(x => x).ToList();
+            Point position;
+            Planet pl;
+            foreach(Sprite sp in sprites)
+            {
+                pl = sp as Planet;
+                position = GetXYLocationIndexes(sp.Position);
+                if (position.X != -1 && position.Y != -1)
+                {
+                    matrix[position.X, position.Y] = (int)pl.planetType;
+                }     
+            }
+        }
+        //Проверка матрицы на наличие хотя бы одного матча
+        public bool IsThereAMatch()
+        {
+            bool res = false;
+            int i = 0;
+            while (i< GridSize && res == false)
+            {
+                int j = 0;
+                while (j < GridSize)
+                {
+                    int match = GetMatchNumbers((0, 1), i, j,matrix);
+                    if (match >= 2)
+                        return true;
+                    else
+                        j++;
+                }
+                i++;
+            }
+            //По вертикали
+            i = 0;
+            while (i < GridSize && res == false)
+            {
+                int j = 0;
+                while (j < GridSize)
+                {
+                    int match = GetMatchNumbers((1, 0), i, j, matrix);
+                    if (match >= 2)
+                        return true;
+                    else
+                        j++;
+                }
+                i++;
+            }
+
+
+            return false;
+        }
+
+
+        public void ClearMatrix()
+        {
+            for (int i = 0; i< matrix.GetUpperBound(0); i++)
+            {
+                for(int j = 0; j < matrix.GetUpperBound(0); j++)
+                {
+                    matrix[i, j] = -1;
+                }
+            }
+        }
+
+
+
+        private int GetMatchNumbers((int, int) destination, int i, int j, int[,] matrix)
+        {
+            int count = 0;
+            int current = matrix[i, j];
+            int next;
+            try
+            {
+                next= matrix[i + destination.Item1, j + destination.Item2];
+            }
+            catch
+            {
+                return 0;
+            }
+            if (current != next)
+            {
+                return 0;
+            }
+            else
+            {
+                return 1 + GetMatchNumbers(destination, i + destination.Item1, j + destination.Item2, matrix);
+            }
+        }
+
+        #endregion
     }
 }

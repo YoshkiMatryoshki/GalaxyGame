@@ -29,6 +29,7 @@ namespace GalaxyGame
         {
             spriteBatch.DrawString(_spriteFont, $"TIME LEFT: {GameTime} ", _position1, Color.White);
             spriteBatch.DrawString(_spriteFont, $"SCORE: {Score} ", _position2, Color.White);
+            spriteBatch.DrawString(_spriteFont, $" {Game1.FieldHasNoMatches} ", new Vector2(_position2.X,_position2.Y+50), Color.White);
         }
     }
 }
