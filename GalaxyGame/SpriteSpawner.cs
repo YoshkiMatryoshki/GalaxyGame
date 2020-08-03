@@ -1,4 +1,5 @@
-﻿using Microsoft.Xna.Framework;
+﻿using GalaxyGame.GameStates;
+using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using System;
 using System.Collections.Generic;
@@ -16,7 +17,7 @@ namespace GalaxyGame
         public SpriteSpawner(int columnCount)
         {
             _columnLocations = new int[columnCount];
-            _spawnY = Game1.gameGrid.Location.Y - 100;
+            _spawnY = MainGameState.gameGrid.Location.Y - 100;
             _spritesToSpawn = new List<Sprite>();
             _spawnGrid = new Dictionary<Vector2, List<Sprite>>();
         }
@@ -41,7 +42,7 @@ namespace GalaxyGame
         public void AddBonus(Sprite bonus, List<Sprite> main_sprite_list)
         {
             main_sprite_list.Add(bonus);
-            int res = Game1.gameGrid.GetXLocationIndex(bonus.Position);
+            int res = MainGameState.gameGrid.GetXLocationIndex(bonus.Position);
             _columnLocations[res] += 1;
         }
 
@@ -50,7 +51,7 @@ namespace GalaxyGame
             Planet pl;
             foreach(KeyValuePair<Vector2, List<Sprite>> column_resp in _spawnGrid)
             {
-                int res = Game1.gameGrid.GetXLocationIndex(column_resp.Key);
+                int res = MainGameState.gameGrid.GetXLocationIndex(column_resp.Key);
                 while(column_resp.Value.Count > 0)
                 {
                     if (_columnLocations[res] == 0)

@@ -1,4 +1,5 @@
-﻿using Microsoft.Xna.Framework;
+﻿using GalaxyGame.GameStates;
+using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using System;
 using System.Collections.Generic;
@@ -17,6 +18,8 @@ namespace GalaxyGame
             get
             {
                 return new Rectangle((int)(Position.X + _texture.Width / 5), (int)(Position.Y + _texture.Height / 2), _texture.Width - 30, _texture.Height - 30);
+                //return new Rectangle((int)(Position.X), (int)(Position.Y), _texture.Width, _texture.Height);
+
             }
         }
 
@@ -27,8 +30,8 @@ namespace GalaxyGame
 
         public override void Update(GameTime gameTime, List<Sprite> sprite)
         {
-            //Rectangle rec = new Rectangle((int)Game1.gameGrid.Location.X-100, (int)Game1.gameGrid.Location.Y, Game1.gameGrid.Width+300, Game1.gameGrid.Height+100);
-            Rectangle rec = new Rectangle((int)Game1.gameGrid.Location.X, (int)Game1.gameGrid.Location.Y, Game1.gameGrid.Width, Game1.gameGrid.Height);
+            Rectangle rec = new Rectangle((int)MainGameState.gameGrid.Location.X, (int)MainGameState.gameGrid.Location.Y, 
+                MainGameState.gameGrid.Width, MainGameState.gameGrid.Height);
 
             if (rec.Contains(this.rectangle))
             {
@@ -44,7 +47,11 @@ namespace GalaxyGame
             {
                 if (sp.GetType() != typeof(Destroyer))
                 {
-                    if (sp.rectangle.Contains(_destroyRect))
+                    //if (sp.rectangle.Contains(_destroyRect))
+                    //{
+                    //    sp.IsRemoved = true;
+                    //}
+                    if (sp.rectangle.Intersects(_destroyRect))
                     {
                         sp.IsRemoved = true;
                     }

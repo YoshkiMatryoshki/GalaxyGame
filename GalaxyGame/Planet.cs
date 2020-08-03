@@ -1,4 +1,5 @@
-﻿using Microsoft.Xna.Framework;
+﻿using GalaxyGame.GameStates;
+using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using SharpDX.MediaFoundation;
@@ -19,11 +20,11 @@ namespace GalaxyGame
         private float _angle = MathHelper.ToRadians(141); //угол относительно X в радианах
         private float _angleSpeed = 0.15f;//0.15f;
         private float _fallingSpeed = 6f;
-        private float _fallingDistance = 0; //дистанция падения элемента - будет влиять на отскок
+        //private float _fallingDistance = 0; //дистанция падения элемента - будет влиять на отскок
 
 
         public Vector2 Destinaition;
-        private bool _bounce = false;
+        //private bool _bounce = false;
 
         public PlanetType planetType;
         public bool IsClicked = false;
@@ -41,9 +42,6 @@ namespace GalaxyGame
         //По аналогии с основным классом Update -1st/ Draw -2nd
         public override void Update(GameTime gameTime, List<Sprite> sprites)
         {
-            //_previousState = _currentState;
-            //_currentState = Mouse.GetState().LeftButton;
-
             //Swap элементов
             if (Destinaition.X != 0 && Destinaition.Y != 0 && Position != Destinaition)
             {
@@ -64,21 +62,12 @@ namespace GalaxyGame
                 Destinaition.X = 0;
                 Destinaition.Y = 0;
             }
-            if (Game1.FieldHasNoMatches || Game1.IsDestroyerActive)
+            if (MainGameState.FieldHasNoMatches || MainGameState.IsDestroyerActive)
                 return;
-            //Нет гравитации, если на форме выделен элемент
-            //if (Game1.IsElementClicked == true)
-            //    return;
-            //if (Game1.CurrentClickedPlanet != null && IsBottomElement(Game1.CurrentClickedPlanet))
-            //    return;
-            //if (Game1.SecondPlanet != null && (IsBottomElement(Game1.SecondPlanet) || this == Game1.SecondPlanet))
-            //    return;
-            //if (IsClicked)
-            //    return;
 
 
             //Падение элемента!
-            float bot = Game1.gameGrid.BottomLine;
+            float bot = MainGameState.gameGrid.BottomLine;
             foreach (Sprite sprite in sprites)
             {
                 if (sprite == this || sprite.GetType() == typeof(Destroyer))
@@ -90,7 +79,7 @@ namespace GalaxyGame
                 }
             }
             Position.Y += _fallingSpeed;
-            Position.Y = MathHelper.Clamp(Position.Y, -1000, bot - Game1.gameGrid.BorderSize - _texture.Height);
+            Position.Y = MathHelper.Clamp(Position.Y, -1000, bot - MainGameState.gameGrid.BorderSize - _texture.Height);
             Origin = new Vector2(Position.X + _texture.Width / 8, Position.Y + _texture.Height / 8);
 
 
@@ -107,12 +96,12 @@ namespace GalaxyGame
         //Препятствует накладыванию спрайтов друг на друга при респавне планет
         public void SpawnCollision(List<Sprite> sprites)
         {
-            List<Sprite> this_columnsprites = sprites.Where(sprite => sprite.rectangle.Left == this.rectangle.Left && sprite.rectangle.Bottom < Game1.gameGrid.Location.Y)
+            List<Sprite> this_columnsprites = sprites.Where(sprite => sprite.rectangle.Left == this.rectangle.Left && sprite.rectangle.Bottom < MainGameState.gameGrid.Location.Y)
                 .Select(x => x).ToList();
             if (this_columnsprites.Count == 0)
                 return;
             int res = this_columnsprites.Min(x => x.rectangle.Top);
-            Position.Y = res - Game1.gameGrid.BorderSize - _texture.Height;
+            Position.Y = res - MainGameState.gameGrid.BorderSize - _texture.Height;
         }
         private void Rotate()
         {
@@ -132,21 +121,21 @@ namespace GalaxyGame
                 bool IsItME = rectangle.Contains(Mouse.GetState().Position);
                 if (IsItME)
                 {
-                    if (Game1.CurrentClickedPlanet == null)
+                    if (MainGameState.CurrentClickedPlanet == null)
                     {
                         IsClicked = true;
-                        Game1.CurrentClickedPlanet = this;
+                        MainGameState.CurrentClickedPlanet = this;
                         //Game1.IsElementClicked = true;
                     }
-                    else if (Game1.CurrentClickedPlanet == this)
+                    else if (MainGameState.CurrentClickedPlanet == this)
                     {
                         //Game1.IsElementClicked = false;
-                        Game1.CurrentClickedPlanet = null;
+                        MainGameState.CurrentClickedPlanet = null;
                         MoveToOriginPlace();
                     }
-                    if (Game1.CurrentClickedPlanet != null && Game1.CurrentClickedPlanet != this)
+                    if (MainGameState.CurrentClickedPlanet != null && MainGameState.CurrentClickedPlanet != this)
                     {
-                        Game1.SecondPlanet = this;
+                        MainGameState.SecondPlanet = this;
                     }
 
                 }
@@ -190,27 +179,27 @@ namespace GalaxyGame
         {
             if (right_matches + left_matches > 3)
             {
-                Bomb bomb = new Bomb(Game1.BombTexture)
+                Bomb bomb = new Bomb(MainGameState.BombTexture)
                 {
                     Position = this.Position,
                     planetType = PlanetType.BlackHole
                 };
-                Game1.spriteSpawner.AddBonus(bomb, sprites);
+                MainGameState.spriteSpawner.AddBonus(bomb, sprites);
             }
             else if (right_matches + left_matches == 3)
             {
                 Texture2D texture;
                 if (destination.X == 1)
-                    texture = Game1.LinePlanetTextures[(int)this.planetType];
+                    texture = MainGameState.LinePlanetTextures[(int)this.planetType];
                 else
-                    texture = Game1.LinePlanetTextures[(int)this.planetType + 5];
+                    texture = MainGameState.LinePlanetTextures[(int)this.planetType + 5];
                 LineBonus temp_sprite = new LineBonus(texture)
                 {
                     planetType = this.planetType,
                     Position = this.Position,
                     BonusDirection = destination
                 };
-                Game1.spriteSpawner.AddBonus(temp_sprite, sprites);
+                MainGameState.spriteSpawner.AddBonus(temp_sprite, sprites);
             }
             if (right_matches + left_matches >= 2)
             {
@@ -291,12 +280,12 @@ namespace GalaxyGame
         private bool IsRightElement(Sprite sprite)
         {
             return (sprite.rectangle.Top <= rectangle.Y + rectangle.Height + 15 && sprite.rectangle.Top >= rectangle.Y - rectangle.Height - 15
-                && (Math.Abs(sprite.rectangle.Left - rectangle.Right) <= (Game1.gameGrid.BorderSize + _texture.Width / 8)));
+                && (Math.Abs(sprite.rectangle.Left - rectangle.Right) <= (MainGameState.gameGrid.BorderSize + _texture.Width / 8)));
         }
         private bool IsLeftElement(Sprite sprite)
         {
             return (sprite.rectangle.Top <= rectangle.Y + rectangle.Height + 15 && sprite.rectangle.Top >= rectangle.Y - rectangle.Height - 15
-                && (Math.Abs(sprite.rectangle.Right - rectangle.Left) <= (Game1.gameGrid.BorderSize + _texture.Width / 8)));
+                && (Math.Abs(sprite.rectangle.Right - rectangle.Left) <= (MainGameState.gameGrid.BorderSize + _texture.Width / 8)));
         }
         //Проверка на коллизию с нижним элементом
         //В пределах колонны 
@@ -305,14 +294,14 @@ namespace GalaxyGame
             return (sprite.rectangle.Left >= rectangle.Left && sprite.rectangle.Left <= rectangle.Right
                 || sprite.rectangle.Right <= rectangle.Right && sprite.rectangle.Right >= rectangle.Left)
                 &&
-                (Math.Abs(sprite.rectangle.Top - rectangle.Bottom) <= (Game1.gameGrid.BorderSize + _texture.Height / 2));
+                (Math.Abs(sprite.rectangle.Top - rectangle.Bottom) <= (MainGameState.gameGrid.BorderSize + _texture.Height / 2));
         }
         private bool IsTopElement(Sprite sprite)
         {
             return (sprite.rectangle.Left >= rectangle.Left && sprite.rectangle.Left <= rectangle.Right
                 || sprite.rectangle.Right <= rectangle.Right && sprite.rectangle.Right >= rectangle.Left)
                 &&
-                (Math.Abs(sprite.rectangle.Bottom - rectangle.Top) <= (Game1.gameGrid.BorderSize + _texture.Height / 2));
+                (Math.Abs(sprite.rectangle.Bottom - rectangle.Top) <= (MainGameState.gameGrid.BorderSize + _texture.Height / 2));
         }
 
         #endregion

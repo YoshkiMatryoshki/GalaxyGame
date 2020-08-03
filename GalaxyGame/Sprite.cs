@@ -1,4 +1,5 @@
-﻿using Microsoft.Xna.Framework;
+﻿using GalaxyGame.GameStates;
+using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using System;
 using System.Collections.Generic;
@@ -10,6 +11,7 @@ namespace GalaxyGame
      public class Sprite : ICloneable
     {
         protected Texture2D _texture;
+        public MainGameState ParentState; 
         public Vector2 Position;
         public Vector2 Origin;
         public float speed;

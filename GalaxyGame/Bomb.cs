@@ -1,4 +1,5 @@
-﻿using Microsoft.Xna.Framework;
+﻿using GalaxyGame.GameStates;
+using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using System;
 using System.Collections.Generic;
@@ -8,7 +9,7 @@ namespace GalaxyGame
 {
     class Bomb : Planet
     {
-        private static int _gridBorder = Game1.gameGrid.BorderSize;
+        private static int _gridBorder = MainGameState.gameGrid.BorderSize;
         private float _detonateTimer = 0;
         private Rectangle _destroyRect
         {

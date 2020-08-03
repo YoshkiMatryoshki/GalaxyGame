@@ -1,4 +1,5 @@
-﻿using Microsoft.Xna.Framework;
+﻿using GalaxyGame.GameStates;
+using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using System;
@@ -21,7 +22,8 @@ namespace GalaxyGame
             base.Update(gameTime, sprites);
             if (IsRemoved == true)
             {
-                Game1.IsDestroyerActive = true;
+                MainGameState.IsDestroyerActive = true;
+                
                 //1st one
                 Destroyer destroyer = Destroyer.Clone() as Destroyer;
                 //destroyer.speed = 3f;

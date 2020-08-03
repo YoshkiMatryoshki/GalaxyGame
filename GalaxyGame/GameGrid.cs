@@ -205,7 +205,6 @@ namespace GalaxyGame
 
         private int GetMatchNumbers((int, int) destination, int i, int j, int[,] matrix)
         {
-            int count = 0;
             int current = matrix[i, j];
             int next;
             try
