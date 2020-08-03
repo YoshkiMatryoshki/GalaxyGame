@@ -23,6 +23,10 @@ namespace GalaxyGame
     }
     public class Game1 : Game
     {
+        public GameState MainGame;
+        public GameState Menu;
+
+
         //Основные параметры игры
         const int game_length = 60;
         private bool _gameStarted = false;
@@ -45,8 +49,8 @@ namespace GalaxyGame
         private ButtonState _previousState;
         private ButtonState _currentState;
 
-        public GameState _nextState;
-        public GameState _currState;
+        public GameState _nextGameState;
+        public GameState _currGameState;
             
 
 
@@ -93,7 +97,21 @@ namespace GalaxyGame
 
         protected override void LoadContent()
         {
+
             _spriteBatch = new SpriteBatch(GraphicsDevice);
+
+            Texture2D backGround = Content.Load<Texture2D>("Background/fon");
+            Menu = new MenuState(this, _graphics.GraphicsDevice, Content)
+            {
+                BackGroundTexture = backGround
+            };
+            MainGame = new MainGameState(this, _graphics.GraphicsDevice, Content)
+            {
+                BackGroundTexture = backGround
+            };
+
+            _currGameState = Menu;
+
 
             BombTexture = Content.Load<Texture2D>("OtherElements/black");
             _backTextures = new List<Sprite>()
@@ -140,11 +158,22 @@ namespace GalaxyGame
         }
         public void ChangeState(GameState state)
         {
-            _nextState = state;
+            _nextGameState = state;
         }
 
         protected override void Update(GameTime gameTime)
         {
+            if (_nextGameState != null)
+            {
+                _currGameState = _nextGameState;
+                _nextGameState = null;
+            }
+
+            _currGameState.Update(gameTime);
+            _currGameState.PostUpdate(gameTime);
+
+            return;
+
             if (Keyboard.GetState().IsKeyDown(Keys.Escape))
                 Exit();
             if (Keyboard.GetState().IsKeyDown(Keys.Space))
@@ -279,7 +308,10 @@ namespace GalaxyGame
         protected override void Draw(GameTime gameTime)
         {
             GraphicsDevice.Clear(Color.CornflowerBlue);
-            
+
+            _currGameState.Draw(gameTime, _spriteBatch);
+            return;
+
             _spriteBatch.Begin();
             foreach (Sprite texture in _backTextures)
             {

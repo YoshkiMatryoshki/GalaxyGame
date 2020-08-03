@@ -37,10 +37,10 @@ namespace GalaxyGame.GameStates
         {
             spriteBatch.Draw(_texture, Rectangle, Color.White);
 
-            if(Text != null || Text != "")
+            if(Text != null && Text != "")
             {
                 var x = (Rectangle.X + (Rectangle.Width / 2)) - (_font.MeasureString(Text).X / 2);
-                var y = (Rectangle.Y + (Rectangle.Height / 2)) - (_font.MeasureString(Text).Y / 2);
+                var y = (Rectangle.Y + (Rectangle.Height / 2)) - (_font.MeasureString(Text).Y / 2) + 5;
 
                 spriteBatch.DrawString(_font, Text, new Vector2(x, y), Color.Black);
             }
@@ -50,8 +50,7 @@ namespace GalaxyGame.GameStates
         {
             _prevMouseState = _currMouseState;
             _currMouseState = Mouse.GetState();
-            
-            
+                
             if (Rectangle.Contains(_currMouseState.Position))
             {
                 if (_currMouseState.LeftButton == ButtonState.Released && _prevMouseState.LeftButton == ButtonState.Pressed)

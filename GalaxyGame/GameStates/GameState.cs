@@ -14,6 +14,8 @@ namespace GalaxyGame.GameStates
         protected Game1 _mainGame;
 
 
+        public Texture2D BackGroundTexture;
+
         public GameState(Game1 game, GraphicsDevice graphicsDevice, ContentManager content)
         {
             _mainGame = game;
