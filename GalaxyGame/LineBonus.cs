@@ -22,7 +22,7 @@ namespace GalaxyGame
             base.Update(gameTime, sprites);
             if (IsRemoved == true)
             {
-                MainGameState.IsDestroyerActive = true;
+                MainGameState.FreezeField = true;
                 
                 //1st one
                 Destroyer destroyer = Destroyer.Clone() as Destroyer;

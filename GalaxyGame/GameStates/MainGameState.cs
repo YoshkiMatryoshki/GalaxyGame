@@ -1,4 +1,5 @@
-﻿using Microsoft.Xna.Framework;
+﻿using GalaxyGame.AnimationWorks;
+using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Content;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
@@ -25,7 +26,7 @@ namespace GalaxyGame.GameStates
         public static bool FieldHasNoMatches = false;
         public static GameGrid gameGrid;
         public static SpriteSpawner spriteSpawner;
-        public static bool IsDestroyerActive = false;
+        public static bool FreezeField = false;
         private static List<Sprite> _backTextures;
         private ButtonState _previousState;
         private ButtonState _currentState;
@@ -33,13 +34,17 @@ namespace GalaxyGame.GameStates
         private Texture2D[] _planetTextures;
         public static Texture2D[] LinePlanetTextures;
         public static Texture2D BombTexture;
+        public static Texture2D ExplosionTexture;
         private List<Sprite> _sprites;
+        public static List<Animation> _explosions;
+        
 
         public static Planet CurrentClickedPlanet;
         public static Planet SecondPlanet;
 
 
         private InfoMessage GameOverMsg;
+        
 
 
         public MainGameState(Game1 game, GraphicsDevice graphicsDevice, ContentManager content) : base(game, graphicsDevice, content)
@@ -54,35 +59,18 @@ namespace GalaxyGame.GameStates
             _sprites = new List<Sprite>();
             _backTextures = new List<Sprite>();
 
+
+            ExplosionTexture =  _content.Load<Texture2D>("Animations/Explosion");
+            _explosions = new List<Animation>();
             //_collisionTimer = 0;
             LoadInfoMessage();
             LoadContent();
 
-
+            Restart();
 
         }
 
-        public override void Draw(GameTime gameTime, SpriteBatch spriteBatch)
-        {
-            spriteBatch.Begin();
-            
 
-            spriteBatch.Draw(BackGroundTexture, new Vector2(0, 0), Color.White);
-            gameGrid.Draw(spriteBatch);
-            foreach (var pl in _sprites)
-            {
-                pl.Draw(spriteBatch);
-            }
-            _backTextures[0].Draw(spriteBatch);
-            _gameInfo.Draw(spriteBatch);
-
-            if (_gameOver)
-            {
-                GameOverMsg.Draw(spriteBatch);
-            }
-
-            spriteBatch.End();
-        }
 
         public override void Update(GameTime gameTime)
         {
@@ -115,15 +103,20 @@ namespace GalaxyGame.GameStates
             _omegalulTimer += (float)gameTime.ElapsedGameTime.TotalSeconds;
 
             Sprite anyDesters = _sprites.Where(sp => sp is Destroyer).FirstOrDefault();
-            if (anyDesters == null)
+
+            if (anyDesters == null && _explosions.Count == 0)
             {
-                IsDestroyerActive = false;
+                FreezeField = false;
             }
 
             //Основной метод update для планет (гравитация)
             foreach (var pl in _sprites)
             {
                 pl.Update(gameTime, _sprites);
+            }
+            foreach(Animation exp in _explosions)
+            {
+                exp.Update(gameTime);
             }
 
 
@@ -161,8 +154,32 @@ namespace GalaxyGame.GameStates
             }
 
         }
+        public override void Draw(GameTime gameTime, SpriteBatch spriteBatch)
+        {
+            spriteBatch.Begin();
 
 
+            spriteBatch.Draw(BackGroundTexture, new Vector2(0, 0), Color.White);
+            gameGrid.Draw(spriteBatch);
+            foreach (var pl in _sprites)
+            {
+                pl.Draw(spriteBatch);
+            }
+            foreach (var exp in _explosions)
+            {
+                exp.Draw(spriteBatch);
+            }
+            _backTextures[0].Draw(spriteBatch);
+            _gameInfo.Draw(spriteBatch);
+
+
+            if (_gameOver)
+            {
+                GameOverMsg.Draw(spriteBatch);
+            }
+
+            spriteBatch.End();
+        }
         //Уборка уничтоженных спрайтов
         //и заполнение спавнера!
         public override void PostUpdate(GameTime gameTime)
@@ -172,6 +189,16 @@ namespace GalaxyGame.GameStates
             {
                 if (_sprites[i].IsRemoved == true)
                 {
+                    try
+                    {
+                        Planet pl = _sprites[i] as Planet;
+                        _explosions.Add(new Animation(ExplosionTexture, 6, pl.Position));
+                        FreezeField = true;
+                    }
+                    catch
+                    {
+
+                    }
                     int res = BlessRNG.Next(0, 5);
                     if (_sprites[i].GetType() == typeof(LineBonus))
                     {
@@ -196,6 +223,20 @@ namespace GalaxyGame.GameStates
                     i++;
                 }
             }
+            int j = 0;
+            while(j < _explosions.Count)
+            {
+                if (_explosions[j].HasEnded == true)
+                {
+                    _explosions.RemoveAt(j);
+                    
+                }
+                else
+                {
+                    j++;
+                }
+                
+            }
         }
 
         private void LoadContent()
@@ -219,8 +260,6 @@ namespace GalaxyGame.GameStates
             gameGrid.SetTexture(_content.Load<Texture2D>("Background/podkladka"));
             LineBonus.Destroyer = new Destroyer(_content.Load<Texture2D>("OtherElements/destroyer"));
 
-            Restart();
-
         }
 
         private void Restart()
@@ -235,6 +274,7 @@ namespace GalaxyGame.GameStates
             _omegalulTimer = 0.8f;
             int plan_type;
             _sprites.Clear();
+            _explosions.Clear();
             for (int i = 0; i < gameGrid.GridSize; i++)
             {
                 for (int j = 0; j < gameGrid.GridSize; j++)

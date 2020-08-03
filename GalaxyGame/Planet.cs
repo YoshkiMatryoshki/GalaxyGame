@@ -19,7 +19,7 @@ namespace GalaxyGame
         public static float radius;
         private float _angle = MathHelper.ToRadians(141); //угол относительно X в радианах
         private float _angleSpeed = 0.15f;//0.15f;
-        private float _fallingSpeed = 6f;
+        private float _fallingSpeed = 8f;
         //private float _fallingDistance = 0; //дистанция падения элемента - будет влиять на отскок
 
 
@@ -42,6 +42,7 @@ namespace GalaxyGame
         //По аналогии с основным классом Update -1st/ Draw -2nd
         public override void Update(GameTime gameTime, List<Sprite> sprites)
         {
+
             //Swap элементов
             if (Destinaition.X != 0 && Destinaition.Y != 0 && Position != Destinaition)
             {
@@ -62,7 +63,8 @@ namespace GalaxyGame
                 Destinaition.X = 0;
                 Destinaition.Y = 0;
             }
-            if (MainGameState.FieldHasNoMatches || MainGameState.IsDestroyerActive)
+
+            if (MainGameState.FieldHasNoMatches || MainGameState.FreezeField)
                 return;
 
 
@@ -84,6 +86,7 @@ namespace GalaxyGame
 
 
         }
+
 
         //Отключение вращения и возврат в стартовую точку.
         public void MoveToOriginPlace()
