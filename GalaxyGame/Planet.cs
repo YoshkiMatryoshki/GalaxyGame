@@ -19,7 +19,7 @@ namespace GalaxyGame
         public static float radius;
         private float _angle = MathHelper.ToRadians(141); //угол относительно X в радианах
         private float _angleSpeed = 0.15f;//0.15f;
-        private float _fallingSpeed = 8f;
+        private float _fallingSpeed = 7f;
         //private float _fallingDistance = 0; //дистанция падения элемента - будет влиять на отскок
 
 
@@ -153,69 +153,166 @@ namespace GalaxyGame
         #region MatchDetection
         public override void MatchDetection(GameTime gameTime, List<Sprite> sprites)
         {
-            if (IsRemoved == false && GetType() != typeof(Destroyer) && GetType() != typeof(Bomb))
+            if (IsRemoved == false && GetType() != typeof(Destroyer))
             {
-                int indexOf;
-                List<Sprite> cleared_sprites = sprites.Where(sp => sp.GetType() != typeof(Bomb) && sp.GetType() != typeof(Destroyer)).Select(x => x).ToList();
+                int indexOf_X;
+                List<Sprite> cleared_sprites = sprites.Where(sp => sp.GetType() != typeof(Destroyer)).Select(x => x).ToList();
+                Vector2 spawnPosition = this.Position;
+                ElementToCreate elementToCreate = ElementToCreate.None;
+
 
                 //Горизонтальная проверка
                 List<Sprite> x_neighbours = cleared_sprites.Where(sprite => sprite.rectangle.Top == rectangle.Top)
                     .OrderBy(x => x.Position.X).ToList();
-                indexOf = x_neighbours.IndexOf(this);
-                int right_matches = GetMatchElements(x_neighbours, indexOf, 1);
-                int left_matches = GetMatchElements(x_neighbours, indexOf, -1);
-                SpawnBombsDeleteMatches(sprites, ref indexOf, x_neighbours, ref right_matches, left_matches, new Vector2(1,0));
-
+                indexOf_X = x_neighbours.IndexOf(this);
+                int right_matches = GetMatchElements(x_neighbours, indexOf_X, 1);
+                int left_matches = GetMatchElements(x_neighbours, indexOf_X, -1);
+                
+                int indexOf_Y;
                 ////Вертикальная проверка
                 List<Sprite> y_neighbours = cleared_sprites.Where(sprite => sprite.Position.X == Position.X)
                     .OrderBy(x => x.Position.Y).ToList();
-                indexOf = y_neighbours.IndexOf(this);
-                int bot_matches = GetBottomMatchElements(y_neighbours, indexOf, 1);
-                int top_matches = GetBottomMatchElements(y_neighbours, indexOf, -1);
-                SpawnBombsDeleteMatches(sprites, ref indexOf, y_neighbours, ref bot_matches, top_matches, new Vector2(0, 1));
-            }
-        }
-        // Right + left = размер матча
-        // в зависимости от размера спавнит новые элементы
-        //и удаляет матчи IsRemoved = true;
-        private void SpawnBombsDeleteMatches(List<Sprite> sprites, ref int indexOf, List<Sprite> x_neighbours, ref int right_matches, int left_matches, Vector2 destination)
-        {
-            if (right_matches + left_matches > 3)
-            {
-                Bomb bomb = new Bomb(MainGameState.BombTexture)
+                indexOf_Y = y_neighbours.IndexOf(this);
+                int bot_matches = GetBottomMatchElements(y_neighbours, indexOf_Y, 1);
+                int top_matches = GetBottomMatchElements(y_neighbours, indexOf_Y, -1);
+
+                //Текущий элемент точно на пересечении
+                if (right_matches+left_matches >= 2 && top_matches+bot_matches >= 2)
                 {
-                    Position = this.Position,
-                    planetType = PlanetType.BlackHole
-                };
-                MainGameState.spriteSpawner.AddBonus(bomb, sprites);
-            }
-            else if (right_matches + left_matches == 3)
-            {
-                Texture2D texture;
-                if (destination.X == 1)
-                    texture = MainGameState.LinePlanetTextures[(int)this.planetType];
-                else
-                    texture = MainGameState.LinePlanetTextures[(int)this.planetType + 5];
-                LineBonus temp_sprite = new LineBonus(texture)
-                {
-                    planetType = this.planetType,
-                    Position = this.Position,
-                    BonusDirection = destination
-                };
-                MainGameState.spriteSpawner.AddBonus(temp_sprite, sprites);
-            }
-            if (right_matches + left_matches >= 2)
-            {
-                right_matches += indexOf;
-                indexOf -= left_matches;
-                while (indexOf <= right_matches)
-                {
-                    x_neighbours[indexOf].IsRemoved = true;
-                    indexOf++;
+                    spawnPosition = this.Position;
+                    elementToCreate = ElementToCreate.Bomb;
+                    SpawnBonus(spawnPosition, elementToCreate, new Vector2(0,0));
+                    //DeleteMatchElements(right_matches, left_matches, indexOf_X, x_neighbours);
+                    //DeleteMatchElements(bot_matches, top_matches, indexOf_Y, y_neighbours);
+                    //return;
                 }
+                //Поиск потенциального пересечения двигаясь по Х
+                else if (right_matches+ left_matches >= 2)
+                {
+                    for(int i = indexOf_X - left_matches; i <= right_matches + indexOf_X; i++)
+                    {
+                        int new_indexOf_Y;
+                        ////Вертикальная проверка
+                        List<Sprite> new_y_neighbours = cleared_sprites.Where(sprite => sprite.Position.X == x_neighbours[i].Position.X)
+                            .OrderBy(x => x.Position.Y).ToList();
+                        new_indexOf_Y = new_y_neighbours.IndexOf(x_neighbours[i]);
+                        int new_bot_matches = GetBottomMatchElements(new_y_neighbours, new_indexOf_Y, 1);
+                        int new_top_matches = GetBottomMatchElements(new_y_neighbours, new_indexOf_Y, -1);
+                        if (new_bot_matches + new_top_matches < 2)
+                        {
+                            continue;
+                        }
+                        else
+                        {
+                            spawnPosition = x_neighbours[i].Position;
+                            elementToCreate = ElementToCreate.Bomb;
+                            SpawnBonus(spawnPosition, elementToCreate, new Vector2(0, 0));
+                            DeleteMatchElements(new_bot_matches, new_top_matches, new_indexOf_Y, new_y_neighbours);
+                            //return;
+                        }
+                    }
+                    if (right_matches + left_matches == 3)
+                    {
+                        SpawnBonus(this.Position, ElementToCreate.LineBonus, new Vector2(1, 0));
+                    }
+                    else if (right_matches + left_matches > 3)
+                    {
+                        SpawnBonus(this.Position, ElementToCreate.Bomb, new Vector2(0, 0));
+                    }
+                    
+                }
+                //Поиск потенциального пересечения двигаясь по Y
+                else if (top_matches + bot_matches >= 2)
+                {
+                    for(int i = indexOf_Y - top_matches; i <= bot_matches+ indexOf_Y; i++)
+                    {
+                        int new_indexOf_X;
+                        //Горизонтальная проверка
+                        List<Sprite> new_x_neighbours = cleared_sprites.Where(sprite => sprite.rectangle.Top == y_neighbours[i].rectangle.Top)
+                            .OrderBy(x => x.Position.X).ToList();
+                        new_indexOf_X = new_x_neighbours.IndexOf(y_neighbours[i]);
+                        int new_right_matches = GetMatchElements(new_x_neighbours, new_indexOf_X, 1);
+                        int new_left_matches = GetMatchElements(new_x_neighbours, new_indexOf_X, -1);
+
+                        if (new_left_matches+ new_right_matches < 2)
+                        {
+                            continue;
+                        }
+                        else
+                        {
+                            SpawnBonus(y_neighbours[i].Position, ElementToCreate.Bomb, new Vector2(0, 0));
+                            DeleteMatchElements(new_right_matches, new_left_matches, new_indexOf_X, new_x_neighbours);
+
+                        }
+                    }
+
+                    if (top_matches + bot_matches == 3)
+                    {
+                        SpawnBonus(this.Position, ElementToCreate.LineBonus, new Vector2(0, 1));
+                    }
+                    else if (top_matches + bot_matches > 3)
+                    {
+                        SpawnBonus(this.Position, ElementToCreate.Bomb, new Vector2(0, 0));
+                    }
+                    
+                }
+
+                //Обязательная подчистка всего остального
+                if (right_matches + left_matches >= 2)
+                {
+                    DeleteMatchElements(right_matches, left_matches, indexOf_X, x_neighbours);
+                }
+                if (top_matches + bot_matches >= 2)
+                {
+                    DeleteMatchElements(bot_matches, top_matches, indexOf_Y, y_neighbours);
+                }
+
+                //SpawnBombsDeleteMatches(sprites, ref indexOf_X, x_neighbours, ref right_matches, left_matches, new Vector2(1, 0));
+                //SpawnBombsDeleteMatches(sprites, ref indexOf_Y, y_neighbours, ref bot_matches, top_matches, new Vector2(0, 1));
             }
         }
 
+        private void DeleteMatchElements(int right_matches, int left_matches, int indexOf, List<Sprite> sprites)
+        {
+            right_matches += indexOf;
+            indexOf -= left_matches;
+            while (indexOf <= right_matches)
+            {
+                sprites[indexOf].IsRemoved = true;
+                indexOf++;
+            }
+        }
+        //Добавляет в стэш спавнера бонус-элемент
+        private void SpawnBonus(Vector2 spawnPosition, ElementToCreate elementToCreate, Vector2 lineBonusDest)
+        {
+            switch (elementToCreate)
+            {
+                case ElementToCreate.LineBonus:
+                    Texture2D texture;
+                    if (lineBonusDest.X == 1)
+                        texture = MainGameState.LinePlanetTextures[(int)this.planetType];
+                    else
+                        texture = MainGameState.LinePlanetTextures[(int)this.planetType + 5];
+                    LineBonus temp_sprite = new LineBonus(texture)
+                    {
+                        planetType = this.planetType,
+                        Position = spawnPosition,
+                        BonusDirection = lineBonusDest
+                    };
+                    MainGameState.spriteSpawner.AddBonusToStash(temp_sprite);
+                    break;
+
+                case ElementToCreate.Bomb:
+                    Bomb bomb = new Bomb(MainGameState.BombPlanetTextures[(int)this.planetType])
+                    {
+                        Position = spawnPosition,
+                        planetType = this.planetType
+                    };
+                    MainGameState.spriteSpawner.AddBonusToStash(bomb);
+                    break;
+            }
+
+        }
         //Собирает по списку комбинацию из совпадающих элементов по горизонтали
 
         private int GetMatchElements(List<Sprite> sprites, int start_ind, int destination)
@@ -308,5 +405,102 @@ namespace GalaxyGame
         }
 
         #endregion
+
+
+
+
+
+
+
+        //public void MatchDetectionOLD(GameTime gameTime, List<Sprite> sprites)
+        //{
+        //    if (IsRemoved == false && GetType() != typeof(Destroyer))
+        //    {
+        //        List<Planet> cleared_sprites = sprites.Select(x => x as Planet).Where(x => x != null && x.planetType == this.planetType).ToList();
+        //        List<Planet> temp_list = new List<Planet>();
+        //        Planet BonusElem;
+
+
+        //        var X_neighbours = cleared_sprites.Where(planet => planet.rectangle.Top == rectangle.Top).OrderBy(x => x.Position.X).ToList();
+        //        var Y_neighbours = cleared_sprites.Where(planet => planet.Position.X == Position.X).OrderBy(x => x.Position.Y).ToList();
+        //        if (X_neighbours.Count >= 3)
+        //        {
+        //            int ind = X_neighbours.IndexOf(this);
+        //            int r_res = GetNeighboursCount((1, 0), ind, X_neighbours);
+        //            int left_res = GetNeighboursCount((-1, 0), ind, X_neighbours);
+        //            if (r_res + left_res >= 2)
+        //            {
+        //                r_res += ind;
+        //                ind -= left_res;
+        //                while (ind <= r_res)
+        //                {
+        //                    X_neighbours[ind].IsRemoved = true;
+        //                    ind++;
+        //                }
+        //            }
+        //            else
+        //            {
+
+        //            }
+        //        }
+        //        if (Y_neighbours.Count >= 3)
+        //        {
+        //            int ind = Y_neighbours.IndexOf(this);
+        //            int r_res = GetNeighboursCount((0, 1), ind, Y_neighbours);
+        //            int left_res = GetNeighboursCount((0, -1), ind, Y_neighbours);
+        //            if (r_res + left_res >= 2)
+        //            {
+        //                r_res += ind;
+        //                ind -= left_res;
+        //                while (ind <= r_res)
+        //                {
+        //                    Y_neighbours[ind].IsRemoved = true;
+        //                    ind++;
+        //                }
+        //            }
+        //            else
+        //            {
+
+        //            }
+        //        }
+        //    }
+        //}
+
+        ////Поиск соседей по списку - destination совпадает с направлением оси
+        //private int GetNeighboursCount((int, int) destination, int ind, List<Planet> cleared_sprites)
+        //{
+        //    Planet next_elem;
+        //    int next_ind = ind;
+        //    if (destination.Item1 > 0 || destination.Item2 > 0)
+        //        next_ind++;
+        //    else if (destination.Item1 < 0 || destination.Item2 < 0)
+        //        next_ind--;
+        //    try
+        //    {
+        //        next_elem = cleared_sprites[next_ind];
+        //    }
+        //    catch
+        //    {
+        //        return 0;
+        //    }
+        //    bool res = destination switch
+        //    {
+        //        (1, 0) => cleared_sprites[ind].IsRightElement(next_elem),
+        //        (-1, 0) => cleared_sprites[ind].IsLeftElement(next_elem),
+        //        (0, 1) => cleared_sprites[ind].IsBottomElement(next_elem),
+        //        (0, -1) => cleared_sprites[ind].IsTopElement(next_elem),
+        //        _ => throw new Exception("OOOps,somethinf went wrong")
+        //    };
+        //    if (res)
+        //        return 1 + GetNeighboursCount(destination, next_ind, cleared_sprites);
+        //    else
+        //        return 0;
+
+
+
+
+        //}
+
+
     }
 }

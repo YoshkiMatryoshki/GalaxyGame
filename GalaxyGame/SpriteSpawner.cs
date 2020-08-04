@@ -39,15 +39,22 @@ namespace GalaxyGame
 
         }
         //Добавляет в спайт немножечко лайма или бомбы
-        public void AddBonus(Sprite bonus, List<Sprite> main_sprite_list)
+        public void AddBonusToStash(Sprite bonus)
         {
-            main_sprite_list.Add(bonus);
-            int res = MainGameState.gameGrid.GetXLocationIndex(bonus.Position);
+            _spritesToSpawn.Add(bonus);
+            var vector = new Vector2(bonus.Position.X, _spawnY);
+            int res = MainGameState.gameGrid.GetXLocationIndex(vector);
             _columnLocations[res] += 1;
         }
 
         public void SpawnAll(List<Sprite> main_sprite_list)
         {
+            foreach(Sprite bonus in _spritesToSpawn)
+            {
+                main_sprite_list.Add(bonus);
+            }
+            _spritesToSpawn.Clear();
+
             Planet pl;
             foreach(KeyValuePair<Vector2, List<Sprite>> column_resp in _spawnGrid)
             {
