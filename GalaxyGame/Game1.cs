@@ -21,6 +21,12 @@ namespace GalaxyGame
         Asteroid = 4,
         BlackHole = 5
     }
+    public enum ElementToCreate
+    {
+        None = 0,
+        LineBonus = 1,
+        Bomb = 2
+    }
     public class Game1 : Game
     {
         public GameState MainGame;

@@ -33,10 +33,12 @@ namespace GalaxyGame.GameStates
 
         private Texture2D[] _planetTextures;
         public static Texture2D[] LinePlanetTextures;
+        public static Texture2D[] BombPlanetTextures;
         public static Texture2D BombTexture;
         public static Texture2D ExplosionTexture;
         private List<Sprite> _sprites;
         public static List<Animation> _explosions;
+        public static List<BombRectangle> bombRectangles;
         
 
         public static Planet CurrentClickedPlanet;
@@ -55,6 +57,7 @@ namespace GalaxyGame.GameStates
             spriteSpawner = new SpriteSpawner(gameGrid.GridSize);
             _planetTextures = new Texture2D[_uniqueElementsCount];
             LinePlanetTextures = new Texture2D[_uniqueElementsCount * 2];
+            BombPlanetTextures = new Texture2D[_uniqueElementsCount];
 
             _sprites = new List<Sprite>();
             _backTextures = new List<Sprite>();
@@ -62,6 +65,7 @@ namespace GalaxyGame.GameStates
 
             ExplosionTexture =  _content.Load<Texture2D>("Animations/Explosion");
             _explosions = new List<Animation>();
+            bombRectangles = new List<BombRectangle>();
             //_collisionTimer = 0;
             LoadInfoMessage();
             LoadContent();
@@ -109,12 +113,17 @@ namespace GalaxyGame.GameStates
                 FreezeField = false;
             }
 
+
             //Основной метод update для планет (гравитация)
-            foreach (var pl in _sprites)
+            foreach (var pl in _sprites.ToArray())
             {
                 pl.Update(gameTime, _sprites);
             }
-            foreach(Animation exp in _explosions)
+            foreach (var rect in bombRectangles)
+            {
+                rect.Update(gameTime, _sprites);
+            }
+            foreach (Animation exp in _explosions)
             {
                 exp.Update(gameTime);
             }
@@ -143,10 +152,11 @@ namespace GalaxyGame.GameStates
             }
 
 
-            if (FieldHasNoMatches == false && _collisionTimer > 1f)
+            if (FieldHasNoMatches == false && _collisionTimer > 1f && !CheckRespawned(_sprites))
             {
                 foreach (var pl in _sprites.ToArray())
                 {
+                    //pl.MatchDetectionOLD(gameTime, _sprites);
                     pl.MatchDetection(gameTime, _sprites);
                 }
                 _collisionTimer = 0;
@@ -161,6 +171,11 @@ namespace GalaxyGame.GameStates
 
             spriteBatch.Draw(BackGroundTexture, new Vector2(0, 0), Color.White);
             gameGrid.Draw(spriteBatch);
+            foreach(var rect in bombRectangles)
+            {
+                rect.Draw(spriteBatch);
+            }
+
             foreach (var pl in _sprites)
             {
                 pl.Draw(spriteBatch);
@@ -223,19 +238,24 @@ namespace GalaxyGame.GameStates
                     i++;
                 }
             }
+            //Прямоугольники
+            i = 0;
+            while(i < bombRectangles.Count)
+            {
+                if (bombRectangles[i].IsRemoved == true)
+                    bombRectangles.RemoveAt(i);
+                else
+                    i++;
+            }
+            //Анимации взрывов
             int j = 0;
             while(j < _explosions.Count)
             {
                 if (_explosions[j].HasEnded == true)
-                {
                     _explosions.RemoveAt(j);
-                    
-                }
                 else
-                {
                     j++;
-                }
-                
+
             }
         }
 
@@ -256,11 +276,15 @@ namespace GalaxyGame.GameStates
             };
             LoadPlanets();
             LoadLineBonuses();
+            LoadBombs();
 
             gameGrid.SetTexture(_content.Load<Texture2D>("Background/podkladka"));
             LineBonus.Destroyer = new Destroyer(_content.Load<Texture2D>("OtherElements/destroyer"));
+            Bomb.RememberedRect = new BombRectangle(_content.Load<Texture2D>("OtherElements/BombRectangle"),0.25f);
 
         }
+
+
 
         private void Restart()
         {
@@ -384,6 +408,17 @@ namespace GalaxyGame.GameStates
             LinePlanetTextures[9] = _content.Load<Texture2D>("LineBonuses/asteroid_line_vertical");
 
         }
+
+        private void LoadBombs()
+        {
+            BombPlanetTextures[0] = _content.Load<Texture2D>("BombBonuses/earth_black");
+            BombPlanetTextures[1] = _content.Load<Texture2D>("BombBonuses/neptune_black");
+            BombPlanetTextures[2] = _content.Load<Texture2D>("BombBonuses/mars_black");
+            BombPlanetTextures[3] = _content.Load<Texture2D>("BombBonuses/saturn_black");
+            BombPlanetTextures[4] = _content.Load<Texture2D>("BombBonuses/asteroid_black");
+
+        }
+
 
         private void LoadInfoMessage()
         {

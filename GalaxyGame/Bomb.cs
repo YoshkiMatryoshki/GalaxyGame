@@ -9,8 +9,9 @@ namespace GalaxyGame
 {
     class Bomb : Planet
     {
+        public static BombRectangle RememberedRect;
         private static int _gridBorder = MainGameState.gameGrid.BorderSize;
-        private float _detonateTimer = 0;
+        
         private Rectangle _destroyRect
         {
             get
@@ -25,21 +26,12 @@ namespace GalaxyGame
 
         public override void Update(GameTime gameTime, List<Sprite> sprites)
         {
-            _detonateTimer += (float)gameTime.ElapsedGameTime.TotalSeconds;
-            if (_detonateTimer > 0.5f)
-            {
-                IsRemoved = true;
-            }
-
             if (IsRemoved == true)
             {
-                foreach(Sprite sp in sprites)
-                {
-                    if (_destroyRect.Intersects(sp.rectangle))
-                    {
-                        sp.IsRemoved = true;
-                    }
-                }
+                
+                RememberedRect.Position = new Vector2(_destroyRect.Location.X,_destroyRect.Location.Y);
+
+                MainGameState.bombRectangles.Add(RememberedRect.Clone() as BombRectangle);
             }
 
             base.Update(gameTime, sprites);

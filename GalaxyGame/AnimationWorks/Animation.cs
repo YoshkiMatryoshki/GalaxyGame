@@ -29,7 +29,7 @@ namespace GalaxyGame.AnimationWorks
             Texture = texture;
             FrameCount = frameCount;
             HasEnded = false;
-            AnimSpeed = 0.08f;
+            AnimSpeed = 0.05f;
             VerticalMult = 0;
             HorizontalMult = 0;
             FrameWidth = 50;
