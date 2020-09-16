@@ -26,7 +26,7 @@ namespace GalaxyGame
 
         public override void Update(GameTime gameTime, List<Sprite> sprites)
         {
-            if (IsRemoved == true)
+            if (IsRemoved)
             {
                 
                 RememberedRect.Position = new Vector2(_destroyRect.Location.X,_destroyRect.Location.Y);

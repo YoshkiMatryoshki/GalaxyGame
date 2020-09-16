@@ -153,7 +153,7 @@ namespace GalaxyGame.GameStates
             }
 
 
-            if (FieldHasNoMatches == false && _collisionTimer > 1f && !CheckRespawned(_sprites))
+            if (!FieldHasNoMatches && _collisionTimer > 1f && !CheckRespawned(_sprites))
             {
                 foreach (var pl in _sprites.ToArray())
                 {
@@ -240,7 +240,7 @@ namespace GalaxyGame.GameStates
             i = 0;
             while(i < bombRectangles.Count)
             {
-                if (bombRectangles[i].IsRemoved == true)
+                if (bombRectangles[i].IsRemoved)
                     bombRectangles.RemoveAt(i);
                 else
                     i++;
@@ -249,7 +249,7 @@ namespace GalaxyGame.GameStates
             int j = 0;
             while(j < _explosions.Count)
             {
-                if (_explosions[j].HasEnded == true)
+                if (_explosions[j].HasEnded)
                     _explosions.RemoveAt(j);
                 else
                     j++;
@@ -352,7 +352,7 @@ namespace GalaxyGame.GameStates
             {
                 CurrentClickedPlanet.MatchDetection(null, _sprites);
                 SecondPlanet.MatchDetection(null, _sprites);
-                if (CurrentClickedPlanet.IsRemoved == false && SecondPlanet.IsRemoved == false)
+                if (!CurrentClickedPlanet.IsRemoved && !SecondPlanet.IsRemoved)
                 {
                     CurrentClickedPlanet.Destinaition = SecondPlanet.Position;
                     SecondPlanet.Destinaition = CurrentClickedPlanet.Position;

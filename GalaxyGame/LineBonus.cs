@@ -20,7 +20,7 @@ namespace GalaxyGame
         public override void Update(GameTime gameTime, List<Sprite> sprites)
         {
             base.Update(gameTime, sprites);
-            if (IsRemoved == true)
+            if (IsRemoved)
             {
                 MainGameState.FreezeField = true;
                 

@@ -138,7 +138,7 @@ namespace GalaxyGame
         #region CheckMatchesNaMinimalkax
         public void FillCheckMatrix(List<Sprite> sprites)
         {
-            //List<Sprite> cleared_sprites = sprites.Where(sp => sp.GetType() != typeof(Destroyer)).Select(x => x).ToList();
+            
             Point position;
             Planet pl;
             foreach(Sprite sp in sprites)

@@ -144,7 +144,7 @@ namespace GalaxyGame
                 }
             }
             //Вращение выделенного элемента
-            if (IsClicked == true)
+            if (IsClicked)
             {
                 Rotate();
             }
