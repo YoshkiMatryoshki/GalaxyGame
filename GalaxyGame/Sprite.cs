@@ -42,10 +42,6 @@ namespace GalaxyGame
         {
             spriteBatch.Draw(_texture, Position, Color.White);
         }
-        public virtual void MatchDetection(GameTime gameTime, List<Sprite> sprite)
-        {
-
-        }
         public virtual void FishForClick()
         {
 
@@ -53,7 +49,7 @@ namespace GalaxyGame
 
         public object Clone()
         {
-            return this.MemberwiseClone();
+            return MemberwiseClone();
         }
     }
 }

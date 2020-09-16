@@ -151,7 +151,7 @@ namespace GalaxyGame
         }
 
         #region MatchDetection
-        public override void MatchDetection(GameTime gameTime, List<Sprite> sprites)
+        public void MatchDetection(GameTime gameTime, List<Sprite> sprites)
         {
             if (!IsRemoved)
             {

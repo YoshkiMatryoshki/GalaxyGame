@@ -155,9 +155,9 @@ namespace GalaxyGame.GameStates
 
             if (!FieldHasNoMatches && _collisionTimer > 1f && !CheckRespawned(_sprites))
             {
-                foreach (var pl in _sprites.ToArray())
+
+                foreach (Planet pl in _sprites.Where(sp => !(sp is Destroyer)).Select(sp => sp as Planet).ToArray())
                 {
-                    //pl.MatchDetectionOLD(gameTime, _sprites);
                     pl.MatchDetection(gameTime, _sprites);
                 }
                 _collisionTimer = 0;
