@@ -353,14 +353,24 @@ namespace GalaxyGame.GameStates
             if (SecondPlanet != null && CurrentClickedPlanet != null && CurrentClickedPlanet.Position == CurrentClickedPlanet.Destinaition
                 && SecondPlanet.Position == SecondPlanet.Destinaition)
             {
+
                 gameGrid.FillPlanetMatrix(_sprites);
-                List<Planet> res = gameGrid.MatchDetection();
+                List<Planet> res = new List<Planet>();
+                var bonus1 =  gameGrid.MatchDetection(CurrentClickedPlanet);
+                var bonus2 = gameGrid.MatchDetection(SecondPlanet);
+                if (bonus1 != null)
+                {
+                    res.Add(bonus1);
+                }
+                if (bonus2 != null)
+                {
+                    res.Add(bonus2);
+                }
+                //List<Planet> res = gameGrid.MatchDetection();
                 foreach(var r in res)
                 {
                     spriteSpawner.AddBonusToStash(r);
                 }
-                //CurrentClickedPlanet.MatchDetection(null, _sprites);
-                //SecondPlanet.MatchDetection(null, _sprites);
                 if (!CurrentClickedPlanet.IsRemoved && !SecondPlanet.IsRemoved)
                 {
                     CurrentClickedPlanet.Destinaition = SecondPlanet.Position;
