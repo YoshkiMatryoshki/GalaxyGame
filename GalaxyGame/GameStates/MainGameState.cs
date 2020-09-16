@@ -203,7 +203,7 @@ namespace GalaxyGame.GameStates
             int i = 0;
             while (i < _sprites.Count)
             {
-                if (_sprites[i].IsRemoved == true)
+                if (_sprites[i].IsRemoved)
                 {
                     try
                     {
@@ -219,17 +219,14 @@ namespace GalaxyGame.GameStates
                     if(_sprites[i] is LineBonus)
                     {
                         _sprites[i].Update(null, _sprites);
-                        spriteSpawner.AddPlanet(_sprites[i].Position, _planetTextures[res], res);
-                        _gameInfo.Score += 1;
-                    }
-                    if (_sprites[i] is Planet)
-                    {
-                        spriteSpawner.AddPlanet(_sprites[i].Position, _planetTextures[res], res);
-                        _gameInfo.Score += 1;
                     }
                     if (_sprites[i] is Bomb)
                     {
                         _sprites[i].Update(gameTime, _sprites);
+                    }
+                    if (!(_sprites[i] is Destroyer))
+                    {
+                        _gameInfo.Score += 1;
                         spriteSpawner.AddPlanet(_sprites[i].Position, _planetTextures[res], res);
                     }
                     _sprites.RemoveAt(i);

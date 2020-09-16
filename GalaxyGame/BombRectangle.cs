@@ -25,7 +25,7 @@ namespace GalaxyGame
                 IsRemoved = true;
                 foreach(Sprite sp in sprite)
                 {
-                    if (rectangle.Contains(sp.rectangle))
+                    if (!(sp is Destroyer) && rectangle.Contains(sp.rectangle))
                     {
                         sp.IsRemoved = true;
                     }
