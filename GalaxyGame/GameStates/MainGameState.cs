@@ -144,9 +144,10 @@ namespace GalaxyGame.GameStates
             {
                 foreach (var sp in _sprites)
                 {
-                    if (sp.GetType() != typeof(Destroyer))
+                    if (!(sp is Destroyer))
+                    {
                         sp.FishForClick();
-
+                    }
                 }
                 SwapClickWorks();
             }
@@ -215,18 +216,18 @@ namespace GalaxyGame.GameStates
 
                     }
                     int res = BlessRNG.Next(0, 5);
-                    if (_sprites[i].GetType() == typeof(LineBonus))
+                    if(_sprites[i] is LineBonus)
                     {
                         _sprites[i].Update(null, _sprites);
                         spriteSpawner.AddPlanet(_sprites[i].Position, _planetTextures[res], res);
                         _gameInfo.Score += 1;
                     }
-                    if (_sprites[i].GetType() == typeof(Planet))
+                    if (_sprites[i] is Planet)
                     {
                         spriteSpawner.AddPlanet(_sprites[i].Position, _planetTextures[res], res);
                         _gameInfo.Score += 1;
                     }
-                    if (_sprites[i].GetType() == typeof(Bomb))
+                    if (_sprites[i] is Bomb)
                     {
                         _sprites[i].Update(gameTime, _sprites);
                         spriteSpawner.AddPlanet(_sprites[i].Position, _planetTextures[res], res);

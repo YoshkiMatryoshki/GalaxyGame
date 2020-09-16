@@ -45,12 +45,8 @@ namespace GalaxyGame
             //Destr does his job
             foreach(Sprite sp in sprite)
             {
-                if (sp.GetType() != typeof(Destroyer))
+                if (!(sp is Destroyer))
                 {
-                    //if (sp.rectangle.Contains(_destroyRect))
-                    //{
-                    //    sp.IsRemoved = true;
-                    //}
                     if (sp.rectangle.Intersects(_destroyRect))
                     {
                         sp.IsRemoved = true;

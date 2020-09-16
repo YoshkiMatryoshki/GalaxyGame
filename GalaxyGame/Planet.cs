@@ -72,7 +72,7 @@ namespace GalaxyGame
             float bot = MainGameState.gameGrid.BottomLine;
             foreach (Sprite sprite in sprites)
             {
-                if (sprite == this || sprite.GetType() == typeof(Destroyer))
+                if (sprite == this || sprite is Destroyer)
                     continue;
                 if (IsBottomElement(sprite))
                 {
@@ -153,10 +153,11 @@ namespace GalaxyGame
         #region MatchDetection
         public override void MatchDetection(GameTime gameTime, List<Sprite> sprites)
         {
-            if (IsRemoved == false && GetType() != typeof(Destroyer))
+            if (!IsRemoved)
             {
                 int indexOf_X;
-                List<Sprite> cleared_sprites = sprites.Where(sp => sp.GetType() != typeof(Destroyer)).Select(x => x).ToList();
+                //List<Sprite> cleared_sprites = sprites.Where(sp => sp.GetType() != typeof(Destroyer)).Select(x => x).ToList();
+                List<Sprite> cleared_sprites = sprites.Where(sp => !(sp is Destroyer)).Select(x => x).ToList();
                 Vector2 spawnPosition = this.Position;
                 ElementToCreate elementToCreate = ElementToCreate.None;
 
@@ -406,100 +407,6 @@ namespace GalaxyGame
 
         #endregion
 
-
-
-
-
-
-
-        //public void MatchDetectionOLD(GameTime gameTime, List<Sprite> sprites)
-        //{
-        //    if (IsRemoved == false && GetType() != typeof(Destroyer))
-        //    {
-        //        List<Planet> cleared_sprites = sprites.Select(x => x as Planet).Where(x => x != null && x.planetType == this.planetType).ToList();
-        //        List<Planet> temp_list = new List<Planet>();
-        //        Planet BonusElem;
-
-
-        //        var X_neighbours = cleared_sprites.Where(planet => planet.rectangle.Top == rectangle.Top).OrderBy(x => x.Position.X).ToList();
-        //        var Y_neighbours = cleared_sprites.Where(planet => planet.Position.X == Position.X).OrderBy(x => x.Position.Y).ToList();
-        //        if (X_neighbours.Count >= 3)
-        //        {
-        //            int ind = X_neighbours.IndexOf(this);
-        //            int r_res = GetNeighboursCount((1, 0), ind, X_neighbours);
-        //            int left_res = GetNeighboursCount((-1, 0), ind, X_neighbours);
-        //            if (r_res + left_res >= 2)
-        //            {
-        //                r_res += ind;
-        //                ind -= left_res;
-        //                while (ind <= r_res)
-        //                {
-        //                    X_neighbours[ind].IsRemoved = true;
-        //                    ind++;
-        //                }
-        //            }
-        //            else
-        //            {
-
-        //            }
-        //        }
-        //        if (Y_neighbours.Count >= 3)
-        //        {
-        //            int ind = Y_neighbours.IndexOf(this);
-        //            int r_res = GetNeighboursCount((0, 1), ind, Y_neighbours);
-        //            int left_res = GetNeighboursCount((0, -1), ind, Y_neighbours);
-        //            if (r_res + left_res >= 2)
-        //            {
-        //                r_res += ind;
-        //                ind -= left_res;
-        //                while (ind <= r_res)
-        //                {
-        //                    Y_neighbours[ind].IsRemoved = true;
-        //                    ind++;
-        //                }
-        //            }
-        //            else
-        //            {
-
-        //            }
-        //        }
-        //    }
-        //}
-
-        ////Поиск соседей по списку - destination совпадает с направлением оси
-        //private int GetNeighboursCount((int, int) destination, int ind, List<Planet> cleared_sprites)
-        //{
-        //    Planet next_elem;
-        //    int next_ind = ind;
-        //    if (destination.Item1 > 0 || destination.Item2 > 0)
-        //        next_ind++;
-        //    else if (destination.Item1 < 0 || destination.Item2 < 0)
-        //        next_ind--;
-        //    try
-        //    {
-        //        next_elem = cleared_sprites[next_ind];
-        //    }
-        //    catch
-        //    {
-        //        return 0;
-        //    }
-        //    bool res = destination switch
-        //    {
-        //        (1, 0) => cleared_sprites[ind].IsRightElement(next_elem),
-        //        (-1, 0) => cleared_sprites[ind].IsLeftElement(next_elem),
-        //        (0, 1) => cleared_sprites[ind].IsBottomElement(next_elem),
-        //        (0, -1) => cleared_sprites[ind].IsTopElement(next_elem),
-        //        _ => throw new Exception("OOOps,somethinf went wrong")
-        //    };
-        //    if (res)
-        //        return 1 + GetNeighboursCount(destination, next_ind, cleared_sprites);
-        //    else
-        //        return 0;
-
-
-
-
-        //}
 
 
     }

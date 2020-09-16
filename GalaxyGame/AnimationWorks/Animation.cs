@@ -53,7 +53,7 @@ namespace GalaxyGame.AnimationWorks
             _timer += (float)gameTime.ElapsedGameTime.TotalSeconds;
             if (_timer > AnimSpeed)
             {
-                _timer = 0;
+                _timer -= AnimSpeed;
                 Current++;
                 HorizontalMult++;
 
