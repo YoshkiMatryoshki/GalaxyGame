@@ -27,7 +27,7 @@ namespace GalaxyGame
         public int BorderSize { get; } = 4;
         private Texture2D _texture;
         private Rectangle _resizeTextureRec;
-        private int[,] matrix;
+        private Planet[,] _planetMatrix;
 
         public GameGrid(int elem_texture_edge)
         {
@@ -35,7 +35,7 @@ namespace GalaxyGame
             Width = BorderSize * (GridSize + 1) + (GridSize * elem_texture_edge);
             Height = Width;
             CellSize = elem_texture_edge;
-            matrix = new int[GridSize, GridSize];
+            _planetMatrix = new Planet[GridSize, GridSize];
             ClearMatrix();
        
 
@@ -136,67 +136,151 @@ namespace GalaxyGame
 
 
         #region CheckMatchesNaMinimalkax
-        public void FillCheckMatrix(List<Sprite> sprites)
+
+        public void FillPlanetMatrix(List<Sprite> sprites)
         {
-            
             Point position;
-            Planet pl;
             foreach(Sprite sp in sprites)
             {
-                pl = sp as Planet;
                 position = GetXYLocationIndexes(sp.Position);
                 if (position.X != -1 && position.Y != -1)
                 {
-                    matrix[position.X, position.Y] = (int)pl.planetType;
-                }     
+                    _planetMatrix[position.X, position.Y] = sp as Planet;
+                }
             }
         }
+        /// <summary>
+        /// Определяет матчи и возвращает набор бонусов для спавна
+        /// </summary>
+        public List<Planet> MatchDetection()
+        {
+            List<Planet> newBonuses = new List<Planet>();
+
+            //Основная проверка по горизонтали с УЧЕТОМ ПЕРЕСЕЧЕНИЙ!!
+            ElementToCreate temp_bonus = ElementToCreate.None;
+            for(int i = 0; i < GridSize; i++)
+            {
+                for(int j = 0; j <GridSize; j++)
+                {
+                    //if already removed = skip
+                    if (_planetMatrix[i,j].IsRemoved)
+                    {
+                        continue;
+                    }
+                    temp_bonus = ElementToCreate.None;
+                    Planet spawnPlanet = _planetMatrix[i, j];
+                    int right_match = GetMatchPlanets((0, 1), i, j);
+
+                    temp_bonus = right_match switch
+                    {
+                        4 => ElementToCreate.Bomb,
+                        3 => ElementToCreate.LineBonus,
+                        _ => ElementToCreate.None
+                    };
+
+                    if (right_match >= 2)
+                    {
+                        for (int current = j; current <= right_match + j; current++)
+                        {
+                            int top_match = GetMatchPlanets((-1, 0), i, current);
+                            int bot_match = GetMatchPlanets((1, 0), i, current);
+                            if (top_match + bot_match >= 2)
+                            {
+                                temp_bonus = ElementToCreate.Bomb;
+                                spawnPlanet = _planetMatrix[i, current];
+                                RemovePlanets((1, 0), i - top_match, current, top_match + bot_match);
+                            }
+                        }
+                        RemovePlanets((0, 1), i, j, right_match);
+                    }
+                    Planet bonus = newBonus(temp_bonus, spawnPlanet, new Vector2(1,0));
+                    if (bonus != null)
+                    {
+                        newBonuses.Add(bonus);
+                    }
+
+                }
+            }
+
+            //Проверка по вертикали уже без учета пересечений
+            for (int i = 0; i < GridSize; i++)
+            {
+                for (int j = 0; j < GridSize; j++)
+                {
+                    if (_planetMatrix[j, i].IsRemoved)
+                    {
+                        continue;
+                    }
+                    temp_bonus = ElementToCreate.None;
+                    int bot_match = GetMatchPlanets((1, 0), j, i);
+                    temp_bonus = bot_match switch
+                    {
+                        4 => ElementToCreate.Bomb,
+                        3 => ElementToCreate.LineBonus,
+                        _ => ElementToCreate.None
+                    };
+                    if (bot_match >= 2)
+                    {
+                        RemovePlanets((1, 0), j, i, bot_match);
+                    }
+                    //new vertical bonus
+                    Planet bonus = newBonus(temp_bonus, _planetMatrix[j, i], new Vector2(0, 1));
+                    if (bonus != null)
+                    {
+                        newBonuses.Add(bonus);
+                    }
+                }
+            }
+            return newBonuses;
+        }
+
+
+        //Создание элемента в зависимости от типа
+        private Planet newBonus(ElementToCreate bonusType, Planet basePlanet, Vector2 dest) =>
+            bonusType switch
+            {
+                ElementToCreate.Bomb => Bomb.CreateBombByPlanet(basePlanet),
+                ElementToCreate.LineBonus => LineBonus.CreateBonusByPlanet(basePlanet, dest),
+                ElementToCreate.None => null,
+                _ => null
+            };
+        //Установка значений isRemoved = true;
+        private void RemovePlanets((int,int) destination, int start_x, int start_y, int length)
+        {
+            for (int i = 0; i <= length; i++)
+            {
+                _planetMatrix[start_x, start_y].IsRemoved = true;
+                start_x += destination.Item1;
+                start_y += destination.Item2;
+            }
+        }
+
         //Проверка матрицы на наличие хотя бы одного матча
         public bool IsThereAMatch()
         {
-            bool res = false;
-            int i = 0;
-            while (i< GridSize && res == false)
+            for (int i = 0; i < GridSize; i++)
             {
-                int j = 0;
-                while (j < GridSize)
+                for (int j = 0; j < GridSize; j++)
                 {
-                    int match = GetMatchNumbers((0, 1), i, j,matrix);
-                    if (match >= 2)
+                    int right_match = GetMatchPlanets((0, 1), i, j);
+                    int bottom_match = GetMatchPlanets((1, 0), i, j);
+                    if (right_match >= 2 || bottom_match >= 2)
+                    {
                         return true;
-                    else
-                        j++;
+                    }
                 }
-                i++;
             }
-            //По вертикали
-            i = 0;
-            while (i < GridSize && res == false)
-            {
-                int j = 0;
-                while (j < GridSize)
-                {
-                    int match = GetMatchNumbers((1, 0), i, j, matrix);
-                    if (match >= 2)
-                        return true;
-                    else
-                        j++;
-                }
-                i++;
-            }
-
-
             return false;
         }
 
 
         public void ClearMatrix()
         {
-            for (int i = 0; i< matrix.GetUpperBound(0); i++)
+            for (int i = 0; i< _planetMatrix.GetUpperBound(0); i++)
             {
-                for(int j = 0; j < matrix.GetUpperBound(0); j++)
+                for(int j = 0; j < _planetMatrix.GetUpperBound(0); j++)
                 {
-                    matrix[i, j] = -1;
+                    _planetMatrix[i, j] = null;
                 }
             }
         }
@@ -222,6 +306,30 @@ namespace GalaxyGame
             else
             {
                 return 1 + GetMatchNumbers(destination, i + destination.Item1, j + destination.Item2, matrix);
+            }
+        }
+
+        private int GetMatchPlanets((int,int) destination, int pos_x, int pos_y)
+        {
+            Planet current;
+            Planet next;
+            int next_x = pos_x + destination.Item1;
+            int next_y = pos_y + destination.Item2;
+            //проверка на выход за пределы матрицы
+            if (next_x >= GridSize || next_x < 0
+                || next_y >= GridSize || next_y < 0)
+            {
+                return 0;
+            }
+            current = _planetMatrix[pos_x, pos_y];
+            next = _planetMatrix[next_x, next_y];
+            if (current.planetType != next.planetType)
+            {
+                return 0;
+            }
+            else
+            {
+                return 1 + GetMatchPlanets(destination, next_x, next_y);
             }
         }
 

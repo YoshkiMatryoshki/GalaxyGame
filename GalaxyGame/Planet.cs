@@ -37,8 +37,6 @@ namespace GalaxyGame
             radius = (float)Math.Sqrt(Math.Pow((_texture.Width / 8), 2) + Math.Pow((_texture.Height / 8), 2));
         }
 
-
-
         //По аналогии с основным классом Update -1st/ Draw -2nd
         public override void Update(GameTime gameTime, List<Sprite> sprites)
         {

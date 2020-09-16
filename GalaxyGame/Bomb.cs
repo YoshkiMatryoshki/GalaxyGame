@@ -24,6 +24,16 @@ namespace GalaxyGame
         {
         }
 
+        public static Bomb CreateBombByPlanet(Planet basePlanet)
+        {
+            Bomb newBomb = new Bomb(MainGameState.BombPlanetTextures[(int)basePlanet.planetType])
+            {
+                Position = basePlanet.Position,
+                planetType = basePlanet.planetType
+            };
+            return newBomb;
+        }
+
         public override void Update(GameTime gameTime, List<Sprite> sprites)
         {
             if (IsRemoved)

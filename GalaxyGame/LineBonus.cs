@@ -17,6 +17,23 @@ namespace GalaxyGame
         {
         }
 
+        //static factory method
+        public static LineBonus CreateBonusByPlanet(Planet basePlanet, Vector2 lineBonusDest)
+        {
+            Texture2D texture;
+            if (lineBonusDest.X == 1)
+                texture = MainGameState.LinePlanetTextures[(int)basePlanet.planetType];
+            else
+                texture = MainGameState.LinePlanetTextures[(int)basePlanet.planetType + 5];
+            LineBonus newBonus = new LineBonus(texture)
+            {
+                planetType = basePlanet.planetType,
+                Position = basePlanet.Position,
+                BonusDirection = lineBonusDest
+            };
+            return newBonus;
+        }
+
         public override void Update(GameTime gameTime, List<Sprite> sprites)
         {
             base.Update(gameTime, sprites);

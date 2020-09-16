@@ -131,9 +131,11 @@ namespace GalaxyGame.GameStates
 
             if (!CheckRespawned(_sprites) && _omegalulTimer > 1f)
             {
-                gameGrid.FillCheckMatrix(_sprites);
+                //gameGrid.FillCheckMatrix(_sprites);
+                gameGrid.FillPlanetMatrix(_sprites);
+
                 var res = gameGrid.IsThereAMatch();
-                if (res == false)
+                if (!res)
                 {
                     FieldHasNoMatches = true;
                 }
@@ -151,14 +153,15 @@ namespace GalaxyGame.GameStates
                 }
                 SwapClickWorks();
             }
-
-
+            //Проверка на матчи и добавление особых бонусов
             if (!FieldHasNoMatches && _collisionTimer > 1f && !CheckRespawned(_sprites))
             {
-
-                foreach (Planet pl in _sprites.Where(sp => !(sp is Destroyer)).Select(sp => sp as Planet).ToArray())
+                
+                gameGrid.FillPlanetMatrix(_sprites);
+                List<Planet> newBonuses = gameGrid.MatchDetection();
+                foreach(var pl in newBonuses)
                 {
-                    pl.MatchDetection(gameTime, _sprites);
+                    spriteSpawner.AddBonusToStash(pl);
                 }
                 _collisionTimer = 0;
 
@@ -350,8 +353,14 @@ namespace GalaxyGame.GameStates
             if (SecondPlanet != null && CurrentClickedPlanet != null && CurrentClickedPlanet.Position == CurrentClickedPlanet.Destinaition
                 && SecondPlanet.Position == SecondPlanet.Destinaition)
             {
-                CurrentClickedPlanet.MatchDetection(null, _sprites);
-                SecondPlanet.MatchDetection(null, _sprites);
+                gameGrid.FillPlanetMatrix(_sprites);
+                List<Planet> res = gameGrid.MatchDetection();
+                foreach(var r in res)
+                {
+                    spriteSpawner.AddBonusToStash(r);
+                }
+                //CurrentClickedPlanet.MatchDetection(null, _sprites);
+                //SecondPlanet.MatchDetection(null, _sprites);
                 if (!CurrentClickedPlanet.IsRemoved && !SecondPlanet.IsRemoved)
                 {
                     CurrentClickedPlanet.Destinaition = SecondPlanet.Position;
