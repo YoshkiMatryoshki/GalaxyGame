@@ -321,15 +321,13 @@ namespace GalaxyGame
             int count = 0;
             Planet curr_elem;
             Planet next_elem;
-            try
-            {
-                curr_elem = sprites[start_ind] as Planet;
-                next_elem = sprites[start_ind + destination] as Planet;
-            }
-            catch
+            if (start_ind + destination == sprites.Count || start_ind + destination == -1)
             {
                 return 0;
             }
+            curr_elem = sprites[start_ind] as Planet;
+            next_elem = sprites[start_ind + destination] as Planet;
+
             if (curr_elem.planetType != next_elem.planetType)
             {
                 return 0;
@@ -349,15 +347,13 @@ namespace GalaxyGame
             int count = 0;
             Planet curr_elem;
             Planet next_elem;
-            try
-            {
-                curr_elem = sprites[start_ind] as Planet;
-                next_elem = sprites[start_ind + destination] as Planet;
-            }
-            catch
+            if (start_ind + destination == sprites.Count || start_ind + destination == -1)
             {
                 return 0;
             }
+            curr_elem = sprites[start_ind] as Planet;
+            next_elem = sprites[start_ind + destination] as Planet;
+
             if (curr_elem.planetType != next_elem.planetType)
             {
                 return 0;
